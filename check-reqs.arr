@@ -1,4 +1,6 @@
 use context starter2024
+include file("reqs-common.arr")
+import lists as L
 OUTSIDE-1000-LEVELS = [list: "APMA 1080", "APMA 1160", "APMA 1690", "APMA 1170", "APMA 1200", 
   "APMA 1210", "APMA 1360", "APMA 1650", "APMA 1655", "APMA 1660", "APMA 1670", "APMA 1710", 
   "APMA 1720", "APMA 1740", "APMA 1910", "APMA 1930", "APMA 2822", "PHP  2630", "PHP  2650", 
@@ -23,17 +25,26 @@ NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 137-", "CSCI
   "CSCI 2952", "CSCI 2999", "APMA 1910", "DEVL 1810", "IAPA 1701", "IAPA 1801", "PLCY 1702"]
 
 fun five-electives(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
-
+  ...
 end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
   cases (List) prereqs:
-    | empty => {courses-used; length(prereqs) == length(courses-used)}
+    | empty =>
+      {courses-used; length(prereqs) == length(courses-used)}
     | link(f, r) => 
       cases (Option) try-satisfy-prereq(courses-taken, f, courses-used):
         | none => courses-satisfied(courses-taken, courses-used, r)
         | some(to-add) => courses-satisfied(courses-taken, link(to-add, courses-used), r)
       end
+  end
+end
+
+
+fun math-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
+  cases (Option) try-satisfy-prereq(courses-taken, is-math-prereq, courses-used):
+    | none => {empty; false}
+    | some(v) => {link(v, courses-used); true}
   end
 end
 
@@ -63,4 +74,17 @@ prereqs-input = [list:
   is-math-prereq
  ]
 
-courses-satisfied([list: "MATH 200", "MATH 0100"], empty, prereqs-input)
+
+
+fun check-reqs(classes-taken :: List<String>) -> Completion:
+  
+    {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
+  can-graduate = L.any(lam(a): a end, [list: prereqs-satisfied-math])
+  ask:
+    | can-graduate then: completed
+    | length(courses-used) == length(classes-taken) then: all-necessary
+    | otherwise: has-unnecessary
+  end
+end
+
+check-reqs([list: "", "MjJKFJ"])
