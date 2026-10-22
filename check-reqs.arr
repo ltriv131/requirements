@@ -30,14 +30,18 @@ fun is-letter-space(char :: String) -> Boolean:
 end
 
 fun is-valid-course-title(course-title :: String) -> Boolean:
-  dept-title = string-substring(course-title, 0, 4)
-  course-number = string-substring(course-title, 5, 9)
+  if string-length(course-title) < 9:
+    false
+  else:
+    dept-title = string-substring(course-title, 0, 4)
+    course-number = string-substring(course-title, 5, 9)
 
-  number-opt = string-to-number(course-number)
-  cases (Option) number-opt:
-    | none => false
-    | some(n) => 
-      string-explode(dept-title).all(is-letter-space)
+    number-opt = string-to-number(course-number)
+    cases (Option) number-opt:
+      | none => false
+      | some(n) => 
+        string-explode(dept-title).all(is-letter-space)
+    end
   end
 end
 
@@ -119,7 +123,7 @@ end
 
 
 fun is-math-prereq(class-input :: String) -> Boolean:
-  (class-input == "MATH 0100") or (class-input == "MATH 0170") or (class-input == "MATH 190")
+  (class-input == "MATH 0100") or (class-input == "MATH 0170") or (class-input == "MATH 0190")
 end
 
 
@@ -158,27 +162,29 @@ fun is-th(cl :: String) -> Boolean:
   cl == "CSCI 0200"
 end
 
-prereqs-input = [list: 
-  is-math-prereq
-]
+
 
 
 
 fun check-reqs(classes-taken :: List<String>) -> Completion:
-
-  {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
-  {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
-  {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
-  {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
-  {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
+  courses-filtered = filter(is-valid-course-title, classes-taken)
+  if not(length(courses-filtered) == length(classes-taken)):
+    malformed
+  else:
+    {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
+    {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
+    {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
+    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
+    {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
     can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
-      prereqs-satisfied-foundations,
-      prereqs-satisfied-tech,
-      prereqs-satisfied-found-math,
-      prereqs-satisfied-core])
+        prereqs-satisfied-foundations,
+        prereqs-satisfied-tech,
+        prereqs-satisfied-found-math,
+        prereqs-satisfied-core])
     ask:
       | can-graduate then: completed
       | length(courses-used) == length(classes-taken) then: all-necessary
       | otherwise: has-unnecessary
     end
   end
+end
