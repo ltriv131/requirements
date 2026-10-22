@@ -1,6 +1,7 @@
 use context starter2024
 include file("reqs-common.arr")
 import lists as L
+provide: check-reqs end
 OUTSIDE-1000-LEVELS = [list: "APMA 1080", "APMA 1160", "APMA 1690", "APMA 1170", "APMA 1200", 
   "APMA 1210", "APMA 1360", "APMA 1650", "APMA 1655", "APMA 1660", "APMA 1670", "APMA 1710", 
   "APMA 1720", "APMA 1740", "APMA 1910", "APMA 1930", "APMA 2822", "PHP  2630", "PHP  2650", 
@@ -37,38 +38,42 @@ NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370", "CSCI
   "CSCI 2952", "CSCI 2999", "APMA 1910", "DEVL 1810", "IAPA 1701", "IAPA 1801", "PLCY 1702"]
 
 fun is-letter-space(char :: String) -> Boolean:
-    ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
+  ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
 end
 
 fun is-valid-course-title(course-title :: String) -> Boolean:
+  if string-length(course-title) < 9:
+    false
+  else:
     dept-title = string-substring(course-title, 0, 4)
     course-number = string-substring(course-title, 5, 9)
-    
+
     number-opt = string-to-number(course-number)
     cases (Option) number-opt:
-        | none => false
-        | some(n) => 
-            string-explode(dept-title).all(is-letter-space)
+      | none => false
+      | some(n) => 
+        string-explode(dept-title).all(is-letter-space)
     end
+  end
 end
 
 fun get-course-number(course-title :: String%(is-valid-course-title)) -> Number:
-    cases (Option) string-to-number(string-substring(course-title, 5, 9)):
-        | none => raise("course-title is malformed")
-        | some(num) => num
-    end
+  cases (Option) string-to-number(string-substring(course-title, 5, 9)):
+    | none => raise("course-title is malformed")
+    | some(num) => num
+  end
 end
 
 fun get-course-dept(course-title :: String%(is-valid-course-title)) -> String:
-    string-substring(course-title, 0, 4)
+  string-substring(course-title, 0, 4)
 end
 
 fun five-tech-electives(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
     satisfied-courses = courses-taken.filter(lam(course): 
         (get-course-dept(course) == "CSCI") and (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) and not(courses-used.member(course)) and not(NON-TECHNICAL.member(course)) end)
 
-    credits = num-min(5, length(satisfied-courses))
-    {courses-used.append(satisfied-courses.take(credits)); (credits >= 5)}
+  credits = num-min(5, length(satisfied-courses))
+  {courses-used.append(satisfied-courses.take(credits)); (credits >= 5)}
 end
 
 five-tech-electives([list: "CSCI 1100", "CSCI 0900", "CSCI 1000"], empty)
@@ -139,25 +144,59 @@ end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
   cases (List) prereqs:
-    | empty =>
-      {courses-used; length(prereqs) == length(courses-used)}
-    | link(f, r) => 
+    | empty => {courses-used; true}
+    | link(f, r) =>
       cases (Option) try-satisfy-prereq(courses-taken, f, courses-used):
-        | none => courses-satisfied(courses-taken, courses-used, r)
+        | none =>
+          {used; _} = courses-satisfied(courses-taken, courses-used, r)
+          {used; false}
         | some(to-add) => courses-satisfied(courses-taken, link(to-add, courses-used), r)
       end
   end
 end
 
-
-fun math-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
-  cases (Option) try-satisfy-prereq(courses-taken, is-math-prereq, courses-used):
-    | none => {empty; false}
-    | some(v) => {link(v, courses-used); true}
-  end
+fun foundations-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
+  courses-satisfied(courses-taken, courses-used, [list: is-algorithms, is-ml, is-systems])
 end
 
-fun try-satisfy-prereq(courses-taken, prereq, courses-used):
+fun is-algorithms(cl :: String) -> Boolean:
+  doc: "Checks if course is algorithms"
+  cl == "CSCI 0500"
+end
+
+fun is-ml(cl:: String) -> Boolean:
+  doc: "Checks if course is ml"
+  cl == "CSCI 0410"
+end
+
+fun is-systems(cl :: String) -> Boolean:
+  doc: "Checks if course is systems design"
+  (cl == "CSCI 0330") or (cl == "CSCI 0300")
+end
+
+
+fun math-foundations(courses-taken :: List<String>, 
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: ```Returns courses used to satisfy requirement and if requirement was satisfied for math 
+  foundation courses```
+  courses-satisfied(courses-taken, courses-used, [list: is-math-foundation])
+end
+
+fun is-math-foundation(cl :: String) -> Boolean:
+  doc: "Checks if course is a math foundation course"
+  (cl == "CSCI 0220") or (cl == "MATH 1530")
+end
+
+fun math-prereq(courses-taken :: List<String>, 
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: "Returns courses used to satisfy math prereq appended and if prereq was satisfied"
+  courses-satisfied(courses-taken, courses-used, [list: is-math-prereq])
+end
+
+fun try-satisfy-prereq(courses-taken :: List<String>, 
+    prereq :: (String -> Boolean), 
+    courses-used :: List<String>) -> Option<String>:
+  doc: "If courses taken satisfy a prereq, returns the course which satisfied it"
   cases (List) filter(satisfies-prereq(prereq, courses-used), courses-taken):
     | empty => none
     | link(f, r) => some(f)
@@ -167,32 +206,75 @@ end
 
 
 fun is-math-prereq(class-input :: String) -> Boolean:
-  (class-input == "MATH 0100") or (class-input == "MATH 0170") or (class-input == "MATH 190")
+  doc: "Checks if class satisfies the prerequisite math requirements"
+  (class-input == "MATH 0100") or (class-input == "MATH 0170") or (class-input == "MATH 0190")
 end
 
 
 
-fun satisfies-prereq(condition :: (String -> Boolean), classes-used :: List<String>) -> (String -> Boolean):
+fun satisfies-prereq(condition :: (String -> Boolean), 
+    classes-used :: List<String>) -> (String -> Boolean):
+  doc: "Returns a function which checks if a class satisfies a prereq and hasn't been used yet"
   fun satisfies-prereq-helper(class-input :: String):
     not(member(classes-used, class-input)) and condition(class-input)
   end
   satisfies-prereq-helper
 end
 
-prereqs-input = [list: 
-  is-math-prereq
- ]
-
-
-fun check-reqs(classes-taken :: List<String>) -> Completion:
-  
-    {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
-  can-graduate = L.any(lam(a): a end, [list: prereqs-satisfied-math])
-  ask:
-    | can-graduate then: completed
-    | length(courses-used) == length(classes-taken) then: all-necessary
-    | otherwise: has-unnecessary
+fun core-cs(courses-taken :: List<String>, courses-used :: List<String>):
+  doc: "Checks if the courses taken satisfy the core cs requirements"
+  if courses-taken.member("CSCI 0190"):
+    courses-satisfied(courses-taken, courses-used, [list: lam(a): a == "CSCI 0190" end, is-upper-cs])
+  else:
+    non-nineteen-track(courses-taken, courses-used)
   end
 end
 
-check-reqs([list: "", "MjJKFJ"])
+
+fun is-upper-cs(cl :: String) -> Boolean:
+  doc: "Checks if the course is a cs course that counts for CS19's second requirement"
+  dept-title = string-substring(cl, 0, 4)
+  course-number = get-course-number(cl)
+  (dept-title == "CSCI") and (course-number >= 200)
+end
+
+fun non-nineteen-track(courses-taken :: List<String>,
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: "Checks if the classes satisfy the requirements for the typical intro cs track"
+  courses-satisfied(courses-taken, courses-used, [list: is-not-nt-track, is-th])
+end
+
+fun is-not-nt-track(cl :: String) -> Boolean:
+  doc: "Checks if the class is a non cs19 intro cs course"
+  (cl == "CSCI 0111") or (cl == "CSCI 0150") or (cl == "CSCI 0170")
+end
+
+fun is-th(cl :: String) -> Boolean:
+  doc: "Checks if the class is cs200"
+  cl == "CSCI 0200"
+end
+
+
+
+fun check-reqs(classes-taken :: List<String>) -> Completion:
+  courses-filtered = filter(is-valid-course-title, classes-taken)
+  if not(length(courses-filtered) == length(classes-taken)):
+    malformed
+  else:
+    {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
+    {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
+    {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
+    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
+    {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
+    can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
+        prereqs-satisfied-foundations,
+        prereqs-satisfied-tech,
+        prereqs-satisfied-found-math,
+        prereqs-satisfied-core])
+    ask:
+      | can-graduate then: completed
+      | length(courses-used) == length(classes-taken) then: all-necessary
+      | otherwise: has-unnecessary
+    end
+  end
+end
