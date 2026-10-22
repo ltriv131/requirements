@@ -130,6 +130,33 @@ fun satisfies-prereq(condition :: (String -> Boolean), classes-used :: List<Stri
   satisfies-prereq-helper
 end
 
+fun core-cs(courses-taken :: List<String>, courses-used :: List<String>):
+  if courses-taken.member("CSCI 0190"):
+    courses-satisfied(courses-taken, courses-used, [list: lam(a): a == "CSCI 0190" end, is-upper-cs])
+  else:
+    non-nineteen-track(courses-taken, courses-used)
+  end
+end
+
+
+fun is-upper-cs(cl :: String) -> Boolean:
+  dept-title = string-substring(cl, 0, 4)
+  course-number = get-course-number(cl)
+  (dept-title == "CSCI") and (course-number >= 200)
+end
+
+fun non-nineteen-track(courses-taken, courses-used):
+  courses-satisfied(courses-taken, courses-used, [list: is-not-nt-track, is-th])
+end
+
+fun is-not-nt-track(cl :: String) -> Boolean:
+  (cl == "CSCI 0111") or (cl == "CSCI 0150") or (cl == "CSCI 0170")
+end
+
+fun is-th(cl :: String) -> Boolean:
+  cl == "CSCI 0200"
+end
+
 prereqs-input = [list: 
   is-math-prereq
 ]
@@ -142,10 +169,12 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
   {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
   {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
   {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
+  {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
     can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
       prereqs-satisfied-foundations,
       prereqs-satisfied-tech,
-      prereqs-satisfied-found-math])
+      prereqs-satisfied-found-math,
+      prereqs-satisfied-core])
     ask:
       | can-graduate then: completed
       | length(courses-used) == length(classes-taken) then: all-necessary
