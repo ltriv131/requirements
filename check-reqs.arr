@@ -30,14 +30,31 @@ end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
   cases (List) prereqs:
-    | empty =>
-      {courses-used; length(prereqs) == length(courses-used)}
-    | link(f, r) => 
+    | empty => {courses-used; true}
+    | link(f, r) =>
       cases (Option) try-satisfy-prereq(courses-taken, f, courses-used):
-        | none => courses-satisfied(courses-taken, courses-used, r)
+        | none =>
+          {used; _} = courses-satisfied(courses-taken, courses-used, r)
+          {used; false}
         | some(to-add) => courses-satisfied(courses-taken, link(to-add, courses-used), r)
       end
   end
+end
+
+fun foundations-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
+  courses-satisfied(courses-taken, courses-used, [list: is-algorithms, is-ml, is-systems])
+end
+
+fun is-algorithms(cl :: String) -> Boolean:
+  cl == "CSCI 0500"
+end
+
+fun is-ml(cl:: String) -> Boolean:
+  cl == "CSCI 0410"
+end
+
+fun is-systems(cl :: String) -> Boolean:
+  (cl == "CSCI 0330") or (cl == "CSCI 0300")
 end
 
 
@@ -79,7 +96,8 @@ prereqs-input = [list:
 fun check-reqs(classes-taken :: List<String>) -> Completion:
   
     {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
-  can-graduate = L.any(lam(a): a end, [list: prereqs-satisfied-math])
+  {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
+  can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, prereqs-satisfied-foundations])
   ask:
     | can-graduate then: completed
     | length(courses-used) == length(classes-taken) then: all-necessary
@@ -87,4 +105,4 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
   end
 end
 
-check-reqs([list: "", "MjJKFJ"])
+check-reqs([list: "", ""])
