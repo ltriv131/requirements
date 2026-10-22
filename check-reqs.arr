@@ -93,6 +93,14 @@ fun is-systems(cl :: String) -> Boolean:
 end
 
 
+fun math-foundations(courses-taken, courses-used) -> {List<String>; Boolean}:
+  courses-satisfied(courses-taken, courses-used, [list: is-math-foundation])
+end
+
+fun is-math-foundation(cl :: String) -> Boolean:
+  (cl == "CSCI 0220") or (cl == "MATH 1530")
+end
+
 fun math-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
   cases (Option) try-satisfy-prereq(courses-taken, is-math-prereq, courses-used):
     | none => {empty; false}
@@ -132,10 +140,12 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
 
   {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
   {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
-  {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found)
+  {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
+  {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
     can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
       prereqs-satisfied-foundations,
-      prereqs-satisfied-tech])
+      prereqs-satisfied-tech,
+      prereqs-satisfied-found-math])
     ask:
       | can-graduate then: completed
       | length(courses-used) == length(classes-taken) then: all-necessary
