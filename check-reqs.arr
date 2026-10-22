@@ -25,38 +25,38 @@ NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370", "CSCI
   "CSCI 2952", "CSCI 2999", "APMA 1910", "DEVL 1810", "IAPA 1701", "IAPA 1801", "PLCY 1702"]
 
 fun is-letter-space(char :: String) -> Boolean:
-    ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
+  ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
 end
 
 fun is-valid-course-title(course-title :: String) -> Boolean:
-    dept-title = string-substring(course-title, 0, 4)
-    course-number = string-substring(course-title, 5, 9)
-    
-    number-opt = string-to-number(course-number)
-    cases (Option) number-opt:
-        | none => false
-        | some(n) => 
-            string-explode(dept-title).all(is-letter-space)
-    end
+  dept-title = string-substring(course-title, 0, 4)
+  course-number = string-substring(course-title, 5, 9)
+
+  number-opt = string-to-number(course-number)
+  cases (Option) number-opt:
+    | none => false
+    | some(n) => 
+      string-explode(dept-title).all(is-letter-space)
+  end
 end
 
 fun get-course-number(course-title :: String%(is-valid-course-title)) -> Number:
-    cases (Option) string-to-number(string-substring(course-title, 5, 9)):
-        | none => raise("course-title is malformed")
-        | some(num) => num
-    end
+  cases (Option) string-to-number(string-substring(course-title, 5, 9)):
+    | none => raise("course-title is malformed")
+    | some(num) => num
+  end
 end
 
 fun get-course-dept(course-title :: String%(is-valid-course-title)) -> String:
-    string-substring(course-title, 0, 4)
+  string-substring(course-title, 0, 4)
 end
 
 fun five-tech-electives(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
-  ...    satisfied-courses = courses-taken.filter(lam(course): 
-        (get-course-dept(course) == "CSCI") and (get-course-number(course) >= 1000) and not(courses-used.member(course)) and not(NON-TECHNICAL.member(course)) end)
+  satisfied-courses = courses-taken.filter(lam(course): 
+    (get-course-dept(course) == "CSCI") and (get-course-number(course) >= 1000) and not(courses-used.member(course)) and not(NON-TECHNICAL.member(course)) end)
 
-    credits = num-min(5, length(satisfied-courses))
-    {courses-used.append(satisfied-courses.take(credits)); (credits >= 5)}
+  credits = num-min(5, length(satisfied-courses))
+  {courses-used.append(satisfied-courses.take(credits)); (credits >= 5)}
 end
 
 five-tech-electives([list: "CSCI 1100", "CSCI 0900", "CSCI 1000"], empty)
@@ -124,20 +124,23 @@ end
 
 prereqs-input = [list: 
   is-math-prereq
- ]
+]
 
 
 
 fun check-reqs(classes-taken :: List<String>) -> Completion:
-  
-    {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
-  {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
-  can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, prereqs-satisfied-foundations])
-  ask:
-    | can-graduate then: completed
-    | length(courses-used) == length(classes-taken) then: all-necessary
-    | otherwise: has-unnecessary
-  end
-end
 
-check-reqs([list: "", ""])
+  {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
+  {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
+  {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found)
+    can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
+      prereqs-satisfied-foundations,
+      prereqs-satisfied-tech])
+    ask:
+      | can-graduate then: completed
+      | length(courses-used) == length(classes-taken) then: all-necessary
+      | otherwise: has-unnecessary
+    end
+  end
+
+  check-reqs([list: "", ""])
