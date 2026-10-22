@@ -86,34 +86,43 @@ fun foundations-prereq(courses-taken :: List<String>, courses-used :: List<Strin
 end
 
 fun is-algorithms(cl :: String) -> Boolean:
+  doc: "Checks if course is algorithms"
   cl == "CSCI 0500"
 end
 
 fun is-ml(cl:: String) -> Boolean:
+  doc: "Checks if course is ml"
   cl == "CSCI 0410"
 end
 
 fun is-systems(cl :: String) -> Boolean:
+  doc: "Checks if course is systems design"
   (cl == "CSCI 0330") or (cl == "CSCI 0300")
 end
 
 
-fun math-foundations(courses-taken, courses-used) -> {List<String>; Boolean}:
+fun math-foundations(courses-taken :: List<String>, 
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: ```Returns courses used to satisfy requirement and if requirement was satisfied for math 
+  foundation courses```
   courses-satisfied(courses-taken, courses-used, [list: is-math-foundation])
 end
 
 fun is-math-foundation(cl :: String) -> Boolean:
+  doc: "Checks if course is a math foundation course"
   (cl == "CSCI 0220") or (cl == "MATH 1530")
 end
 
-fun math-prereq(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
-  cases (Option) try-satisfy-prereq(courses-taken, is-math-prereq, courses-used):
-    | none => {empty; false}
-    | some(v) => {link(v, courses-used); true}
-  end
+fun math-prereq(courses-taken :: List<String>, 
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: "Returns courses used to satisfy math prereq appended and if prereq was satisfied"
+  courses-satisfied(courses-taken, courses-used, [list: is-math-prereq])
 end
 
-fun try-satisfy-prereq(courses-taken, prereq, courses-used):
+fun try-satisfy-prereq(courses-taken :: List<String>, 
+    prereq :: (String -> Boolean), 
+    courses-used :: List<String>) -> Option<String>:
+  doc: "If courses taken satisfy a prereq, returns the course which satisfied it"
   cases (List) filter(satisfies-prereq(prereq, courses-used), courses-taken):
     | empty => none
     | link(f, r) => some(f)
@@ -123,12 +132,15 @@ end
 
 
 fun is-math-prereq(class-input :: String) -> Boolean:
+  doc: "Checks if class satisfies the prerequisite math requirements"
   (class-input == "MATH 0100") or (class-input == "MATH 0170") or (class-input == "MATH 0190")
 end
 
 
 
-fun satisfies-prereq(condition :: (String -> Boolean), classes-used :: List<String>) -> (String -> Boolean):
+fun satisfies-prereq(condition :: (String -> Boolean), 
+    classes-used :: List<String>) -> (String -> Boolean):
+  doc: "Returns a function which checks if a class satisfies a prereq and hasn't been used yet"
   fun satisfies-prereq-helper(class-input :: String):
     not(member(classes-used, class-input)) and condition(class-input)
   end
@@ -136,6 +148,7 @@ fun satisfies-prereq(condition :: (String -> Boolean), classes-used :: List<Stri
 end
 
 fun core-cs(courses-taken :: List<String>, courses-used :: List<String>):
+  doc: "Checks if the courses taken satisfy the core cs requirements"
   if courses-taken.member("CSCI 0190"):
     courses-satisfied(courses-taken, courses-used, [list: lam(a): a == "CSCI 0190" end, is-upper-cs])
   else:
@@ -145,20 +158,25 @@ end
 
 
 fun is-upper-cs(cl :: String) -> Boolean:
+  doc: "Checks if the course is a cs course that counts for CS19's second requirement"
   dept-title = string-substring(cl, 0, 4)
   course-number = get-course-number(cl)
   (dept-title == "CSCI") and (course-number >= 200)
 end
 
-fun non-nineteen-track(courses-taken, courses-used):
+fun non-nineteen-track(courses-taken :: List<String>,
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: "Checks if the classes satisfy the requirements for the typical intro cs track"
   courses-satisfied(courses-taken, courses-used, [list: is-not-nt-track, is-th])
 end
 
 fun is-not-nt-track(cl :: String) -> Boolean:
+  doc: "Checks if the class is a non cs19 intro cs course"
   (cl == "CSCI 0111") or (cl == "CSCI 0150") or (cl == "CSCI 0170")
 end
 
 fun is-th(cl :: String) -> Boolean:
+  doc: "Checks if the class is cs200"
   cl == "CSCI 0200"
 end
 
