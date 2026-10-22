@@ -22,7 +22,9 @@ NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 137-", "CSCI
   "CSCI 1805", "CSCI 1860", "CSCI 1870", "CSCI 1952", "CSCI 2002", "CSCI 2200", "CSCI 2402", 
   "CSCI 2952", "CSCI 2999", "APMA 1910", "DEVL 1810", "IAPA 1701", "IAPA 1801", "PLCY 1702"]
 
-fun five-electives(courses-taken :: List<String>, courses-used :: List<String>) -> {}
+fun five-electives(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
+
+end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
   cases (List) prereqs:
