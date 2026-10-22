@@ -1,6 +1,7 @@
 use context starter2024
 include file("reqs-common.arr")
 import lists as L
+provide: check-reqs end
 OUTSIDE-1000-LEVELS = [list: "APMA 1080", "APMA 1160", "APMA 1690", "APMA 1170", "APMA 1200", 
   "APMA 1210", "APMA 1360", "APMA 1650", "APMA 1655", "APMA 1660", "APMA 1670", "APMA 1710", 
   "APMA 1720", "APMA 1740", "APMA 1910", "APMA 1930", "APMA 2822", "PHP  2630", "PHP  2650", 
@@ -181,5 +182,3 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
       | otherwise: has-unnecessary
     end
   end
-
-  check-reqs([list: "", ""])
