@@ -4,7 +4,7 @@ use context starter2024
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
   cases (List) prereqs:
-    | empty => courses-used
+    | empty => {courses-used; length(prereqs) == length(courses-used)}
     | link(f, r) => 
       cases (Option) try-satisfy-prereq(courses-taken, f, courses-used):
         | none => courses-satisfied(courses-taken, courses-used, r)
@@ -38,6 +38,5 @@ end
 prereqs-input = [list: 
   is-math-prereq
  ]
-
 
 courses-satisfied([list: "MATH 200", "MATH 0100"], empty, prereqs-input)
