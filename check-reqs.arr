@@ -2,6 +2,15 @@ use context starter2024
 include file("reqs-common.arr")
 import lists as L
 provide: check-reqs end
+
+CSCI-REQUIRED-CLASSES = [list: "MATH 0100", "MATH 0170", 
+  "MATH 0190", "CSCI 0111", "CSCI 0150", "CSCI 0170", 
+  "CSCI 0190", "CSCI 0200", "CSCI 0220", "MATH 1530", 
+  "CSCI 0300", "CSCI 0320", "CSCI 0330", "CSCI 0410", 
+  "CSCI 0500", "MATH 0520", "MATH 0540", "APMA 0260", 
+  "APMA 1650", "APMA 1655", "CSCI 1970", "CSCI 1973", 
+  "PHP  0060", "CSCI 2951"]
+
 OUTSIDE-1000-LEVELS = [list: "APMA 1080", "APMA 1160", "APMA 1690", "APMA 1170", "APMA 1200", 
   "APMA 1210", "APMA 1360", "APMA 1650", "APMA 1655", "APMA 1660", "APMA 1670", "APMA 1710", 
   "APMA 1720", "APMA 1740", "APMA 1910", "APMA 1930", "APMA 2822", "PHP  2630", "PHP  2650", 
@@ -41,19 +50,52 @@ fun is-letter-space(char :: String) -> Boolean:
   ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
 end
 
+fun is-digit(c :: String) -> Boolean:
+  doc: "Checks if a single-character string is a numeric digit"
+  (c >= "0") and (c <= "9")
+end
+
+fun is-upper(c :: String) -> Boolean:
+  doc: "Checks if a single-character string is an uppercase letter"
+  (c >= "A") and (c <= "Z")
+end
+
+fun is-valid-dept(dept :: String) -> Boolean:
+  doc: "Checks if department is 4 uppercase chars or 3 uppercase chars with a trailing space"
+  if string-length(dept) <> 4:
+    false
+  else:
+    c0 = string-substring(dept, 0, 1)
+    c1 = string-substring(dept, 1, 2)
+    c2 = string-substring(dept, 2, 3)
+    c3 = string-substring(dept, 3, 4)
+    is-upper(c0) and is-upper(c1) and is-upper(c2) and (is-upper(c3) or (c3 == " "))
+  end
+end
+
+fun is-valid-num(num-str :: String) -> Boolean:
+  doc: "Checks if a 4-character string consists of exactly four numeric digits"
+  if string-length(num-str) <> 4:
+    false
+  else:
+    c0 = string-substring(num-str, 0, 1)
+    c1 = string-substring(num-str, 1, 2)
+    c2 = string-substring(num-str, 2, 3)
+    c3 = string-substring(num-str, 3, 4)
+    is-digit(c0) and is-digit(c1) and is-digit(c2) and is-digit(c3)
+  end
+end
+
 fun is-valid-course-title(course-title :: String) -> Boolean:
+  doc: "Validates if course title starts with 4-char dept, 1 space, and 4 digits"
   if string-length(course-title) < 9:
     false
   else:
     dept-title = string-substring(course-title, 0, 4)
+    space-char = string-substring(course-title, 4, 5)
     course-number = string-substring(course-title, 5, 9)
 
-    number-opt = string-to-number(course-number)
-    cases (Option) number-opt:
-      | none => false
-      | some(n) => 
-        string-explode(dept-title).all(is-letter-space)
-    end
+    is-valid-dept(dept-title) and (space-char == " ") and is-valid-num(course-number)
   end
 end
 
@@ -153,6 +195,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     # ENGN 1800/1931J counts as an arts/humanities/policy course, but ENGN 1931T does not
     # Cannot use both ENGN 2520 and CSCI 1420
     # All 1000 level math courses
+  true
 end
 
 #NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370", "CSCI 1800", 
@@ -293,7 +336,9 @@ fun is-th(cl :: String) -> Boolean:
   cl == "CSCI 0200"
 end
 
-
+fun is-valid-course(course :: String) -> Boolean:
+  member(OUTSIDE-1000-LEVELS, course) or member(OUTSIDE-1000-LEVELS-NO-CONFLICT, course) or member(NON-TECHNICAL, course) or (get-course-dept(course) == "CSCI") or member(CSCI-REQUIRED-CLASSES, course)
+end
 
 fun check-reqs(classes-taken :: List<String>) -> Completion:
   courses-filtered = filter(is-valid-course-title, classes-taken)
@@ -312,7 +357,7 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
         prereqs-satisfied-core])
     ask:
       | can-graduate then: completed
-      | length(courses-used) == length(classes-taken) then: all-necessary
+      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end, classes-taken)) == 0 then: all-necessary
       | otherwise: has-unnecessary
     end
   end
