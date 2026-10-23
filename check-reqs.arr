@@ -195,7 +195,6 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     # ENGN 1800/1931J counts as an arts/humanities/policy course, but ENGN 1931T does not
     # Cannot use both ENGN 2520 and CSCI 1420
     # All 1000 level math courses
-  true
 end
 
 #NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370", "CSCI 1800", 
