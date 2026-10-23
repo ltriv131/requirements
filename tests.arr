@@ -242,3 +242,37 @@ check "valid mixed combinations of 4 additional electives":
   # 3 Outside 1000-level courses + 1 Linear Alg
   check-reqs([list: "APMA 1080", "PHIL 1630", "ENGN 1010", "MATH 0540"]) is all-necessary
 end
+
+
+# File: test-five-tech-electives.arr
+
+check "five technical electives requirement using check-reqs":
+  # Exactly 5 eligible 1000-level CS technical electives
+  check-reqs([list: "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040", "CSCI 1050"]) is all-necessary
+
+  # Partial technical CS electives (1 to 4 courses) with no extra courses
+  check-reqs([list: "CSCI 1010"]) is all-necessary
+  check-reqs([list: "CSCI 1010", "CSCI 1020"]) is all-necessary
+  check-reqs([list: "CSCI 1010", "CSCI 1020", "CSCI 1030"]) is all-necessary
+  check-reqs([list: "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040"]) is all-necessary
+
+  # 5 technical electives + 4 general electives (9 valid 1000-level CS courses total)
+  check-reqs([list: 
+      "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040", "CSCI 1050",
+      "CSCI 1060", "CSCI 1070", "CSCI 1080", "CSCI 1090"
+    ]) is all-necessary
+
+  # Exceeding available credit slots (5 tech + 4 general + 1 extra course)
+  check-reqs([list: 
+      "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040", "CSCI 1050",
+      "CSCI 1060", "CSCI 1070", "CSCI 1080", "CSCI 1090", "CSCI 1100"
+    ]) is has-unnecessary
+
+  # Non-technical CS course (CSCI 1250) fills a general elective slot rather than a tech elective slot
+  check-reqs([list: 
+      "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040", "CSCI 1050", "CSCI 1250"
+    ]) is all-necessary
+
+  # Technical electives with valid section/suffix letters
+  check-reqs([list: "CSCI 1010A", "CSCI 1020B", "CSCI 1030C", "CSCI 1040D", "CSCI 1050E"]) is all-necessary
+end
