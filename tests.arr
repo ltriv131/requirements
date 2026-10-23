@@ -6,7 +6,7 @@ include file("check-reqs.arr")
 
 # File: test-malformed.arr
 
-include file("reqs-common.arr")
+# File: test-malformed.arr
 
 check "department casing and character validity":
   check-reqs([list: "csci 0190"]) is malformed
@@ -22,7 +22,6 @@ check "department length and padding rules":
   check-reqs([list: "CSC 0190"]) is malformed
   check-reqs([list: "CSCIS 0190"]) is malformed
   check-reqs([list: "C 0190"]) is malformed
-  # 3-letter department padded with a space is valid
   check-reqs([list: "PHP  0060"]) is-not malformed
   check-reqs([list: "ENG  0010"]) is-not malformed
 end
@@ -38,14 +37,13 @@ check "course number digit count and validity":
   check-reqs([list: "CSCI 190"]) is malformed
   check-reqs([list: "CSCI 19"]) is malformed
   check-reqs([list: "CSCI 1"]) is malformed
-  check-reqs([list: "CSCI 00190"]) is malformed
   check-reqs([list: "CSCI O190"]) is malformed
   check-reqs([list: "CSCI 019A"]) is malformed
   check-reqs([list: "CSCI 01-0"]) is malformed
   check-reqs([list: "CSCI 01 0"]) is malformed
 end
 
-check "arbitrary and empty strings":
+check "arbitrary, empty, and invalid delimiter strings":
   check-reqs([list: ""]) is malformed
   check-reqs([list: " "]) is malformed
   check-reqs([list: "hello"]) is malformed
@@ -53,12 +51,11 @@ check "arbitrary and empty strings":
   check-reqs([list: "CSCI-0190"]) is malformed
 end
 
-check "suffixes and non-existent courses (should be well-formed)":
-  # Anything past digits should be ignored per spec, so suffix strings remain well-formed
+check "extra characters and suffixes after digits are valid (not malformed)":
   check-reqs([list: "CSCI 2951S"]) is-not malformed
   check-reqs([list: "CSCI 2951-S"]) is-not malformed
+  check-reqs([list: "CSCI 01900"]) is-not malformed
   check-reqs([list: "CSCI 0190-A"]) is-not malformed
-  # Non-existent courses are treated as valid courses per spec
   check-reqs([list: "ABCD 1234"]) is-not malformed
   check-reqs([list: "CSCI 9999"]) is-not malformed
 end

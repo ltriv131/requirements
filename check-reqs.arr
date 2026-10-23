@@ -2,6 +2,15 @@ use context starter2024
 include file("reqs-common.arr")
 import lists as L
 provide: check-reqs end
+
+CSCI-REQUIRED-CLASSES = [list: "MATH 0100", "MATH 0170", 
+  "MATH 0190", "CSCI 0111", "CSCI 0150", "CSCI 0170", 
+  "CSCI 0190", "CSCI 0200", "CSCI 0220", "MATH 1530", 
+  "CSCI 0300", "CSCI 0320", "CSCI 0330", "CSCI 0410", 
+  "CSCI 0500", "MATH 0520", "MATH 0540", "APMA 0260", 
+  "APMA 1650", "APMA 1655", "CSCI 1970", "CSCI 1973", 
+  "PHP  0060", "CSCI 2951"]
+
 OUTSIDE-1000-LEVELS = [list: "APMA 1080", "APMA 1160", "APMA 1690", "APMA 1170", "APMA 1200", 
   "APMA 1210", "APMA 1360", "APMA 1650", "APMA 1655", "APMA 1660", "APMA 1670", "APMA 1710", 
   "APMA 1720", "APMA 1740", "APMA 1910", "APMA 1930", "APMA 2822", "PHP  2630", "PHP  2650", 
@@ -289,7 +298,9 @@ fun is-th(cl :: String) -> Boolean:
   cl == "CSCI 0200"
 end
 
-
+fun is-valid-course(course :: String) -> Boolean:
+  member(OUTSIDE-1000-LEVELS, course) or member(OUTSIDE-1000-LEVELS-NO-CONFLICT, course) or member(NON-TECHNICAL, course) or (get-course-dept(course) == "CSCI") or member(CSCI-REQUIRED-CLASSES, course)
+end
 
 fun check-reqs(classes-taken :: List<String>) -> Completion:
   courses-filtered = filter(is-valid-course-title, classes-taken)
@@ -308,7 +319,7 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
         prereqs-satisfied-core])
     ask:
       | can-graduate then: completed
-      | length(courses-used-cs-core) == length(classes-taken) then: all-necessary
+      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end, classes-taken)) == 0 then: all-necessary
       | otherwise: has-unnecessary
     end
   end
