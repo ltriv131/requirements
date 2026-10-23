@@ -72,9 +72,31 @@ check "student with all requirements met can graduate":
     is completed
 end
 
-check "intro sequences":
-  check-reqs([list: "CSCI 0190", "CSCI 0200"]) is all-necessary
+# File: test-core-courses.arr
+
+check "core computer science intro courses":
+  # CS 19 and CS 15 taken together contain redundant intro entry points
   check-reqs([list: "CSCI 0190", "CSCI 0150"]) is has-unnecessary
+
+  # Valid intro sequences with CSCI 0200 are all necessary
+  check-reqs([list: "CSCI 0150", "CSCI 0200"]) is all-necessary
+  check-reqs([list: "CSCI 0170", "CSCI 0200"]) is all-necessary
+  check-reqs([list: "CSCI 0111", "CSCI 0200"]) is all-necessary
+  check-reqs([list: "CSCI 0190", "CSCI 0200"]) is all-necessary
+
+  # CSCI 0200 without a preceding intro entry point is still all necessary
+  check-reqs([list: "CSCI 0200"]) is all-necessary
+
+  # Single intro entry points on their own
+  check-reqs([list: "CSCI 0150"]) is all-necessary
+  check-reqs([list: "CSCI 0170"]) is all-necessary
+  check-reqs([list: "CSCI 0111"]) is all-necessary
+  check-reqs([list: "CSCI 0190"]) is all-necessary
+
+  # Multiple overlapping intro entry points
+  check-reqs([list: "CSCI 0150", "CSCI 0170"]) is has-unnecessary
+  check-reqs([list: "CSCI 0111", "CSCI 0150", "CSCI 0200"]) is has-unnecessary
+  check-reqs([list: "CSCI 0111", "CSCI 0190"]) is has-unnecessary
 end
 
 
@@ -111,4 +133,112 @@ check "foundations areas requirements":
 
   # Just imaginary non-concentration courses
   check-reqs([list: "ABCD 0123", "EFGH 4567"]) is all-necessary
+end
+
+check "no courses taken":
+  check-reqs(empty) is all-necessary
+end
+
+# File: test-additional-electives.arr
+
+check "independent study limits (CSCI 1970 and CSCI 1973)":
+  # Exactly 1 independent study course is necessary and allowed
+  check-reqs([list: "CSCI 1970"]) is all-necessary
+  check-reqs([list: "CSCI 1973"]) is all-necessary
+
+  # Exactly 2 independent study courses combined are necessary and allowed
+  check-reqs([list: "CSCI 1970", "CSCI 1973"]) is all-necessary
+  check-reqs([list: "CSCI 1970", "CSCI 1970"]) is all-necessary
+
+  # More than 2 independent study courses contains redundant/unnecessary courses
+  check-reqs([list: "CSCI 1970", "CSCI 1973", "CSCI 1970"]) is has-unnecessary
+  check-reqs([list: "CSCI 1973", "CSCI 1973", "CSCI 1973"]) is has-unnecessary
+end
+
+check "non-technical CS course limits":
+  # Up to 3 non-technical CS courses are allowed as electives
+  check-reqs([list: "CSCI 1250"]) is all-necessary
+  check-reqs([list: "CSCI 1250", "CSCI 1800"]) is all-necessary
+  check-reqs([list: "CSCI 1250", "CSCI 1800", "CSCI 1870"]) is all-necessary
+
+  # More than 3 non-technical CS courses triggers has-unnecessary
+  check-reqs([list: "CSCI 1250", "CSCI 1800", "CSCI 1870", "CSCI 2200"]) is has-unnecessary
+  check-reqs([list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370"]) is has-unnecessary
+end
+
+check "linear algebra restrictions (max 1 concentration credit)":
+  # Single linear algebra course is all-necessary
+  check-reqs([list: "MATH 0520"]) is all-necessary
+  check-reqs([list: "MATH 0540"]) is all-necessary
+  check-reqs([list: "APMA 0260"]) is all-necessary
+
+  # Taking two linear algebra courses flags the second as unnecessary
+  check-reqs([list: "MATH 0520", "MATH 0540"]) is has-unnecessary
+  check-reqs([list: "MATH 0520", "APMA 0260"]) is has-unnecessary
+  check-reqs([list: "MATH 0540", "APMA 0260"]) is has-unnecessary
+
+  # Taking all three linear algebra courses flags extra as unnecessary
+  check-reqs([list: "MATH 0520", "MATH 0540", "APMA 0260"]) is has-unnecessary
+end
+
+check "statistics restrictions (max 1 credit between APMA 1650/1655)":
+  # Single statistics course is all-necessary
+  check-reqs([list: "APMA 1650"]) is all-necessary
+  check-reqs([list: "APMA 1655"]) is all-necessary
+
+  # Taking both APMA 1650 and APMA 1655 flags one as unnecessary
+  check-reqs([list: "APMA 1650", "APMA 1655"]) is has-unnecessary
+end
+
+check "conflicting and duplicate elective pairings":
+  # Cannot use both DATA 1340 and CSCI 1951
+  check-reqs([list: "DATA 1340", "CSCI 1951"]) is has-unnecessary
+
+  # Cannot use both EEPS 1340 and CSCI 1951
+  check-reqs([list: "EEPS 1340", "CSCI 1951"]) is has-unnecessary
+
+  # Cannot use both ENGN 2520 and CSCI 1420
+  check-reqs([list: "ENGN 2520", "CSCI 1420"]) is has-unnecessary
+end
+
+check "approved outside 1000-level courses (max 3 allowed)":
+  # Up to 3 approved outside 1000-level courses are all-necessary
+  check-reqs([list: "APMA 1080"]) is all-necessary
+  check-reqs([list: "APMA 1080", "ECON 1490"]) is all-necessary
+  check-reqs([list: "APMA 1080", "ECON 1490", "PHIL 1630"]) is all-necessary
+
+  # More than 3 outside 1000-level courses flags extra as unnecessary
+  check-reqs([list: "APMA 1080", "ECON 1490", "PHIL 1630", "PHYS 1590"]) is has-unnecessary
+  check-reqs([list: "CLPS 1211", "DATA 1030", "ENGN 1010", "NEUR 1440"]) is has-unnecessary
+end
+
+check "CSCI 0320 as an additional elective":
+  # CSCI 0320 can be used to satisfy one of the 4 additional electives
+  check-reqs([list: "CSCI 0320"]) is all-necessary
+  check-reqs([list: "CSCI 0320", "MATH 0520", "APMA 1650", "CSCI 1250"]) is all-necessary
+end
+
+check "no double-counting across requirement categories":
+  # 5 technical electives + 4 additional electives (all distinct) are all-necessary
+  check-reqs([list: 
+    "CSCI 1010", "CSCI 1020", "CSCI 1030", "CSCI 1040", "CSCI 1050",
+    "CSCI 1060", "CSCI 1070", "CSCI 1080", "CSCI 1090"
+  ]) is all-necessary
+
+  # A foundation course (CSCI 0500) cannot be double-counted to satisfy an elective slot
+  check-reqs([list: "CSCI 0500"]) is all-necessary
+
+  # A math prereq (MATH 0100) cannot double-count as a math foundation or elective
+  check-reqs([list: "MATH 0100", "CSCI 0220"]) is all-necessary
+end
+
+check "valid mixed combinations of 4 additional electives":
+  # 1 Linear Alg + 1 Stats + 1 Non-Tech CS + 1 Outside 1000-level
+  check-reqs([list: "MATH 0520", "APMA 1650", "CSCI 1250", "ECON 1490"]) is all-necessary
+
+  # 2 Independent Studies + 1 CSCI 0320 + 1 Non-Tech CS
+  check-reqs([list: "CSCI 1970", "CSCI 1973", "CSCI 0320", "CSCI 1800"]) is all-necessary
+
+  # 3 Outside 1000-level courses + 1 Linear Alg
+  check-reqs([list: "APMA 1080", "PHIL 1630", "ENGN 1010", "MATH 0540"]) is all-necessary
 end
