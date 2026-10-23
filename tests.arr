@@ -276,3 +276,105 @@ check "five technical electives requirement using check-reqs":
   # Technical electives with valid section/suffix letters
   check-reqs([list: "CSCI 1010A", "CSCI 1020B", "CSCI 1030C", "CSCI 1040D", "CSCI 1050E"]) is all-necessary
 end
+
+check "completed requirements: typical standard pathway":
+  check-reqs([list:
+    "MATH 0100", 
+    "CSCI 0220", 
+    "CSCI 0150", "CSCI 0200", 
+    "CSCI 0500", "CSCI 0410", "CSCI 0330", 
+    "MATH 0520", "APMA 1650", "CSCI 1250", "APMA 1080", 
+    "CSCI 1410", "CSCI 1420", "CSCI 1430", "CSCI 1470", "CSCI 1480"
+  ]) is completed
+end
+
+check "completed requirements: CS19 pathway":
+  check-reqs([list:
+    "MATH 0190", 
+    "MATH 1530", 
+    "CSCI 0190", "CSCI 1300", 
+    "CSCI 0500", "CSCI 0410", "CSCI 0300", 
+    "DATA 1340", "MATH 0540", "CSCI 0320", "ECON 1490", 
+    "CSCI 1380", "CSCI 1670", "CSCI 1680", "CSCI 1730", "CSCI 1950" 
+  ]) is completed
+end
+
+check "complex prior usage: missing exactly one tech elective":
+  check-reqs([list:
+    "MATH 0100", "CSCI 0220", "CSCI 0150", "CSCI 0200",
+    "CSCI 0500", "CSCI 0410", "CSCI 0330",
+    "MATH 0520", "APMA 1650", "CSCI 1250", "APMA 1080",
+    "CSCI 1410", "CSCI 1420", "CSCI 1430", "CSCI 1470"
+  ]) is all-necessary
+end
+
+check "complex prior usage: using courses that satisfy multiple overlapping pools":
+  # CSCI 0330 satisfies Systems Foundation.
+  # CSCI 0320 satisfies 4-Electives.
+  # ENGN 2520 and CSCI 1420 are both listed, which triggers the conflict rule.
+  check-reqs([list:
+    "MATH 0100", "CSCI 0220", "CSCI 0111", "CSCI 0200",
+    "CSCI 0500", "CSCI 0410", "CSCI 0330",
+    "CSCI 0320", "ENGN 2520", "CSCI 1420", "APMA 1655", 
+    "CSCI 1410", "CSCI 1430", "CSCI 1470", "CSCI 1480", "CSCI 1950"
+  ]) is has-unnecessary
+end
+
+check "complex prior usage: independent study limits in completed track":
+  # Uses exactly 2 independent studies towards the 4 additional electives requirement
+  check-reqs([list:
+    "MATH 0100", "CSCI 0220", "CSCI 0150", "CSCI 0200",
+    "CSCI 0500", "CSCI 0410", "CSCI 0330",
+    "CSCI 1970", "CSCI 1973", "MATH 0520", "APMA 1650", 
+    "CSCI 1410", "CSCI 1420", "CSCI 1430", "CSCI 1470", "CSCI 1480"
+  ]) is completed
+end
+
+check "complex prior usage: course order does not affect completion":
+  # Shuffle of the standard pathway to ensure filtering logic holds true indiscriminately 
+  check-reqs([list:
+    "CSCI 1480", "APMA 1080", "CSCI 1430", "CSCI 0330",
+    "MATH 0520", "CSCI 0500", "MATH 0100", "CSCI 0410",
+    "CSCI 1250", "CSCI 0220", "CSCI 1410", "CSCI 0200",
+    "CSCI 0150", "APMA 1650", "CSCI 1420", "CSCI 1470"
+  ]) is completed
+end
+
+check "complex prior usage: extra courses beyond graduation requirements evaluate to completed":
+  # Students meeting all requirements with additional non-conflicting valid courses should complete
+  check-reqs([list:
+    "MATH 0100", "CSCI 0220", "CSCI 0150", "CSCI 0200",
+    "CSCI 0500", "CSCI 0410", "CSCI 0330",
+    "MATH 0520", "APMA 1650", "CSCI 1250", "APMA 1080",
+    "CSCI 1410", "CSCI 1420", "CSCI 1430", "CSCI 1470", "CSCI 1480",
+    "CSCI 2952", "PHIL 1630", "PHYS 1600"
+  ]) is completed
+end
+
+check "optimal course allocation and reuse constraints": 
+  # Ensure flexible courses are utilized where most needed and not reused.
+  # CSCI 1950 satisfies both CS and Data requirements, while DATA 1340 satisfies only Data.
+  # The system must optimally assign DATA 1340 to Data and CSCI 1950 to CS to evaluate to completed.
+  check-reqs([list:
+    "MATH 0190", 
+    "MATH 1530", 
+    "CSCI 0190", "CSCI 1300", 
+    "CSCI 0500", "CSCI 0410", "CSCI 0300", 
+    "MATH 0540", "CSCI 0320", "ECON 1490", 
+    "CSCI 1380", "CSCI 1670", "CSCI 1680", "CSCI 1730", 
+    "DATA 1340", 
+    "CSCI 1950"
+  ]) is completed
+  
+  # Ensure that a single flexible course (CSCI 1950) cannot be reused to satisfy both requirements simultaneously.
+  # This list contains exactly one flexible course and omits the strict Data course (DATA 1340), leaving it one course short.
+  check-reqs([list:
+    "MATH 0190", 
+    "MATH 1530", 
+    "CSCI 0190", "CSCI 1300", 
+    "CSCI 0500", "CSCI 0410", "CSCI 0300", 
+    "MATH 0540", "CSCI 0320", "ECON 1490", 
+    "CSCI 1380", "CSCI 1670", "CSCI 1680", "CSCI 1730",
+    "CSCI 1950"
+  ]) is-not completed
+end
