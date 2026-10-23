@@ -127,7 +127,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
 
     lin-alg = courses-left.filter(lam(course): [list: "MATH 0520", "MATH 0540", "APMA 0260"].member(course) end)
     credit-lin-alg = num-min(1, lin-alg.length())
-    lin-alg-used = courses-taken.take(credit-lin-alg)
+  lin-alg-used = lin-alg.take(credit-lin-alg)
 
     math-1000-level = courses-left.filter(lam(course): (get-course-dept(course) == "MATH") and 
         (get-course-number(course) >= 1000) end)
@@ -202,6 +202,10 @@ check "four-electives: counts 4 credits with no conflicts":
     {[list: "MATH 0540", "APMA 1080", "CSCI 1000", "CSCI 1200"]; true}
   four-electives([list: "MATH 0540", "CSCI 1000", "APMA 1080"], empty) is 
     {[list: "MATH 0540", "APMA 1080", "CSCI 1000"]; false}  
+end
+
+check "":
+  four-electives([list: "APMA 1080", "ECON 1490", "PHIL 1630", "PHYS 1590"], empty) is {[list: "APMA 1080", "ECON 1490", "PHIL 1630"]; false}
 end
 
 check "four-electives: only counts 3 non-tech CS credits":
