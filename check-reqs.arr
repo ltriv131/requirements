@@ -139,16 +139,14 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     apma-1650-1655-used = apma-1650-1655.take(credit-apma-1650-1655)
 
     # We want to prioritize non-cs courses as the cs course can be used to satisfy intro requirement
-    data-1340-csci-1951 = if courses-left.member("DATA 1340"): [list: "DATA 1340"]
-        else if courses-left.member("CSCI 1951"): [list: "CSCI 1951"]
-        else: empty
-        end
-        
-    eeps-1340-csci-1951 = if courses-left.member("EEPS 1340"): [list: "EEPS 1340"]
-        else if courses-left.member("CSCI 1951"): [list: "CSCI 1951"]
-        else: empty
-        end
-    
+    data-eeps-1340-csci-1951 = 
+      ask: 
+        | courses-left.member("DATA 1340") then: [list: "DATA 1340"]
+        | courses-left.member("EEPS 1340") then: [list: "EEPS 1340"]
+        | courses-left.member("CSCI 1951") then: [list: "CSCI 1951"]
+        | otherwise: empty
+      end
+
     engn-2520-csci-1420 = if courses-left.member("ENGN 2520"): [list: "ENGN 2520"]
         else if courses-left.member("CSCI 1420"): [list: "CSCI 1420"]
         else: empty
@@ -175,8 +173,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     used-combined = lin-alg-used.append(math-1000-level)
       .append(outside-csci)
       .append(apma-1650-1655-used)
-      .append(data-1340-csci-1951)
-      .append(eeps-1340-csci-1951)
+      .append(data-eeps-1340-csci-1951)
       .append(engn-2520-csci-1420)
       .append(csci-320)
       .append(csci-1970-1973)
@@ -190,8 +187,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
       {new-used; false}
     end
     # Cannot use both APMA 1650/1655
-    # Cannot use both DATA 1340 and CSCI 1951
-    # Cannot use both EEPS 1340 and CSCI 1951
+    # Cannot use both DATA 1340 / EEPS 1340 (same 1-credit course) and CSCI 1951
     # ENGN 1800/1931J counts as an arts/humanities/policy course, but ENGN 1931T does not
     # Cannot use both ENGN 2520 and CSCI 1420
     # All 1000 level math courses
