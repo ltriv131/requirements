@@ -41,19 +41,52 @@ fun is-letter-space(char :: String) -> Boolean:
   ((char >= "a") and (char <= "z")) or ((char >= "A") and (char <= "Z")) or (char == " ")
 end
 
+fun is-digit(c :: String) -> Boolean:
+  doc: "Checks if a single-character string is a numeric digit"
+  (c >= "0") and (c <= "9")
+end
+
+fun is-upper(c :: String) -> Boolean:
+  doc: "Checks if a single-character string is an uppercase letter"
+  (c >= "A") and (c <= "Z")
+end
+
+fun is-valid-dept(dept :: String) -> Boolean:
+  doc: "Checks if department is 4 uppercase chars or 3 uppercase chars with a trailing space"
+  if string-length(dept) <> 4:
+    false
+  else:
+    c0 = string-substring(dept, 0, 1)
+    c1 = string-substring(dept, 1, 2)
+    c2 = string-substring(dept, 2, 3)
+    c3 = string-substring(dept, 3, 4)
+    is-upper(c0) and is-upper(c1) and is-upper(c2) and (is-upper(c3) or (c3 == " "))
+  end
+end
+
+fun is-valid-num(num-str :: String) -> Boolean:
+  doc: "Checks if a 4-character string consists of exactly four numeric digits"
+  if string-length(num-str) <> 4:
+    false
+  else:
+    c0 = string-substring(num-str, 0, 1)
+    c1 = string-substring(num-str, 1, 2)
+    c2 = string-substring(num-str, 2, 3)
+    c3 = string-substring(num-str, 3, 4)
+    is-digit(c0) and is-digit(c1) and is-digit(c2) and is-digit(c3)
+  end
+end
+
 fun is-valid-course-title(course-title :: String) -> Boolean:
+  doc: "Validates if course title starts with 4-char dept, 1 space, and 4 digits"
   if string-length(course-title) < 9:
     false
   else:
     dept-title = string-substring(course-title, 0, 4)
+    space-char = string-substring(course-title, 4, 5)
     course-number = string-substring(course-title, 5, 9)
 
-    number-opt = string-to-number(course-number)
-    cases (Option) number-opt:
-      | none => false
-      | some(n) => 
-        string-explode(dept-title).all(is-letter-space)
-    end
+    is-valid-dept(dept-title) and (space-char == " ") and is-valid-num(course-number)
   end
 end
 
@@ -89,7 +122,8 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     math-1000-level = courses-left.filter(lam(course): (get-course-dept(course) == "MATH") and 
         (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) end)
     
-    outside-csci = courses-left.filter(lam(course): OUTSIDE-NO-CONFLICT.member(course) end)
+  #outside-csci = courses-left.filter(lam(course): OUTSIDE-NO-CONFLICT.member(course) end)
+  outside-csci = empty
 
     non-tech-csci-2000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
         (get-course-number(course) >= 2000) and (get-course-number(course) < 3000) and
@@ -107,7 +141,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
         else: empty
         end
 
-    eeps-1340-csci-1951 = if corses-left.member("EEPS 1340"): [list: "EEPS 1340"]
+  eeps-1340-csci-1951 = if courses-left.member("EEPS 1340"): [list: "EEPS 1340"]
         else if courses-left.member("CSCI 1951"): [list: "CSCI 1951"]
         else: empty
         end
@@ -125,13 +159,13 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
 
     non-tech-csci-1000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
         (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) and
-        and (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420)
+      (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420) and
         NON-TECHNICAL.member(course) end)
     credit-non-tech-csci-1000 = num-min(3, length(non-tech-csci-1000))
 
-    tech-csci-1000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
+  tech-csci-1000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
         (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) and
-        and (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420)
+      (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420) and
         not(NON-TECHNICAL.member(course)) end)
     
     # Cannot use both APMA 1650/1655
@@ -140,6 +174,7 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     # ENGN 1800/1931J counts as an arts/humanities/policy course, but ENGN 1931T does not
     # Cannot use both ENGN 2520 and CSCI 1420
     # All 1000 level math courses
+  true
 end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
@@ -273,7 +308,7 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
         prereqs-satisfied-core])
     ask:
       | can-graduate then: completed
-      | length(courses-used) == length(classes-taken) then: all-necessary
+      | length(courses-used-cs-core) == length(classes-taken) then: all-necessary
       | otherwise: has-unnecessary
     end
   end
