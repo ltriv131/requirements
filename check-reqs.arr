@@ -343,13 +343,16 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
     {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
     {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
     {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
-    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-found-math)
+    {courses-used-four-additional; prereqs-four} = four-electives(classes-taken, courses-used-found-math)
+    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-four-additional)
+    
     {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
     can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
         prereqs-satisfied-foundations,
         prereqs-satisfied-tech,
         prereqs-satisfied-found-math,
-        prereqs-satisfied-core])
+        prereqs-satisfied-core,
+        prereqs-four])
     ask:
       | can-graduate then: completed
       | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end, classes-taken)) == 0 then: all-necessary
