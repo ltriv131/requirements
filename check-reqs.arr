@@ -84,30 +84,25 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
 
     lin-alg = courses-left.filter(lam(course): [list: "MATH 0520", "MATH 0540", "APMA 0260"].member(course) end)
-    credit-lin-alg = num-min(1, length(lin-alg))
+    credit-lin-alg = num-min(1, lin-alg.length())
+    lin-alg-used = courses-taken.take(credit-lin-alg)
 
     math-1000-level = courses-left.filter(lam(course): (get-course-dept(course) == "MATH") and 
-        (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) end)
+        (get-course-number(course) >= 1000) end)
     
-    outside-csci = courses-left.filter(lam(course): OUTSIDE-NO-CONFLICT.member(course) end)
+    outside-csci = courses-left.filter(lam(course): OUTSIDE-1000-LEVELS-NO-CONFLICT.member(course) end)
 
-    non-tech-csci-2000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
-        (get-course-number(course) >= 2000) and (get-course-number(course) < 3000) and
-        NON-TECHNICAL.member(course) end)
-    
-    credit-non-tech-csci-2000 = num-min(3, length(non-tech-csci-2000))
-
-    tech-csci-2000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
-        (get-course-number(course) >= 2000) and (get-course-number(course) < 3000) and
-        not(NON-TECHNICAL.member(course)) end)
+    apma-1650-1655 = courses-left.filter(lam(course): [list: "APMA 1650", "APMA 1655"].member(course) end)
+    credit-apma-1650-1655 = num-min(1, apma-1650-1655.length())
+    apma-1650-1655-used = apma-1650-1655.take(credit-apma-1650-1655)
 
     # We want to prioritize non-cs courses as the cs course can be used to satisfy intro requirement
     data-1340-csci-1951 = if courses-left.member("DATA 1340"): [list: "DATA 1340"]
         else if courses-left.member("CSCI 1951"): [list: "CSCI 1951"]
         else: empty
         end
-
-    eeps-1340-csci-1951 = if corses-left.member("EEPS 1340"): [list: "EEPS 1340"]
+        
+    eeps-1340-csci-1951 = if courses-left.member("EEPS 1340"): [list: "EEPS 1340"]
         else if courses-left.member("CSCI 1951"): [list: "CSCI 1951"]
         else: empty
         end
@@ -118,28 +113,72 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
         end
 
     csci-320 = courses-left.filter(lam(course): course == "CSCI 0320" end)
-    credit-320 = num-min(0, length(csci-320))
 
     csci-1970-1973 = courses-left.filter(lam(course): [list: "CSCI 1970", "CSCI 1973"].member(course) end)
-    credit-1970-1973 = length(csci-1970-1973)
 
     non-tech-csci-1000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
-        (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) and
+        (get-course-number(course) >= 1000)
         and (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420)
-        NON-TECHNICAL.member(course) end)
-    credit-non-tech-csci-1000 = num-min(3, length(non-tech-csci-1000))
+        and (get-course-number(course) <> 1970) and (get-course-number(course) <> 1973)
+        and NON-TECHNICAL.member(course) end)
+    credit-non-tech-csci-1000 = num-min(3, non-tech-csci-1000.length())
+    non-tech-csci-1000-used = non-tech-csci-1000.take(credit-non-tech-csci-1000)
 
     tech-csci-1000 = courses-left.filter(lam(course): (get-course-dept(course) == "CSCI") and 
-        (get-course-number(course) >= 1000) and (get-course-number(course) < 2000) and
+        (get-course-number(course) >= 1000)
         and (get-course-number(course) <> 1951) and (get-course-number(course) <> 1420)
-        not(NON-TECHNICAL.member(course)) end)
-    
+        and (get-course-number(course) <> 1970) and (get-course-number(course) <> 1973)
+        and not(NON-TECHNICAL.member(course)) end)
+
+    used-combined = lin-alg-used.append(math-1000-level)
+      .append(outside-csci)
+      .append(apma-1650-1655-used)
+      .append(data-1340-csci-1951)
+      .append(eeps-1340-csci-1951)
+      .append(engn-2520-csci-1420)
+      .append(csci-320)
+      .append(csci-1970-1973)
+      .append(non-tech-csci-1000-used)
+      .append(tech-csci-1000)
+    combined-credits = num-min(4, used-combined.length())
+    new-used = courses-used.append(used-combined.take(combined-credits))
+    if combined-credits == 4:
+      {new-used; true}
+    else:
+      {new-used; false}
+    end
     # Cannot use both APMA 1650/1655
     # Cannot use both DATA 1340 and CSCI 1951
     # Cannot use both EEPS 1340 and CSCI 1951
     # ENGN 1800/1931J counts as an arts/humanities/policy course, but ENGN 1931T does not
     # Cannot use both ENGN 2520 and CSCI 1420
     # All 1000 level math courses
+end
+
+#NON-TECHNICAL = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370", "CSCI 1800", 
+#  "CSCI 1805", "CSCI 1860", "CSCI 1870", "CSCI 1952", "CSCI 2002", "CSCI 2200", "CSCI 2402", 
+#  "CSCI 2952", "CSCI 2999", "APMA 1910", "DEVL 1810", "IAPA 1701", "IAPA 1801", "PLCY 1702"]
+
+check "four-electives: counts 4 credits with no conflicts":
+  four-electives([list: "MATH 0540", "CSCI 1000", "APMA 1080", "CSCI 1200"], empty) is 
+    {[list: "MATH 0540", "APMA 1080", "CSCI 1000", "CSCI 1200"]; true}
+  four-electives([list: "MATH 0540", "CSCI 1000", "APMA 1080"], empty) is 
+    {[list: "MATH 0540", "APMA 1080", "CSCI 1000"]; false}  
+end
+
+check "four-electives: only counts 3 non-tech CS credits":
+  four-electives([list: "CSCI 1250", "CSCI 1870", "CSCI 1952", "CSCI 2200", "CSCI 2402"], empty) is 
+    {[list: "CSCI 1250", "CSCI 1870", "CSCI 1952"]; false}
+end
+
+check "four-electives: does not over-count conflicts":
+  four-electives([list: "MATH 0520", "MATH 0540", "APMA 0260", "APMA 1650", "APMA 1655"], empty) is
+    {[list: "MATH 0520", "APMA 1650"]; false}
+end
+
+check "four-electives: prioritizes using non-cs courses":
+  four-electives([list: "CSCI 1001", "MATH 1000", "CSCI 1000", "CSCI 1951", "DATA 1340"], empty) is
+    {[list: "MATH 1000", "DATA 1340", "CSCI 1001", "CSCI 1000"]; true}  
 end
 
 fun courses-satisfied(courses-taken :: List<String>, courses-used :: List<String>, prereqs):
