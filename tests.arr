@@ -107,7 +107,7 @@ check "math prerequisite requirements":
 end
 
 check "introductory math foundations requirements":
-  check-reqs([list: "CSCI 0220", "MATH 1530"]) is has-unnecessary
+  check-reqs([list: "CSCI 0220", "MATH 1530"]) is all-necessary
   check-reqs([list: "CSCI 0220"]) is all-necessary
   check-reqs([list: "MATH 1530"]) is all-necessary
   check-reqs([list: "MATH 0000"]) is all-necessary
