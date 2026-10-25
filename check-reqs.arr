@@ -302,36 +302,46 @@ fun satisfies-prereq(condition :: (String -> Boolean),
   satisfies-prereq-helper
 end
 
-fun core-cs(courses-taken :: List<String>, courses-used :: List<String>):
-  doc: "Checks if the courses taken satisfy the core cs requirements"
+fun core-cs(courses-taken :: List<String>,
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: ```Returns courses used to satisfy the core cs requirement appended and if it was satisfied,
+       using the CS19 track if CSCI 0190 was taken and the standard intro track otherwise```
   if courses-taken.member("CSCI 0190"):
-    courses-satisfied(courses-taken, courses-used, [list: lam(a): a == "CSCI 0190" end, is-upper-cs])
+    cs19-track(courses-taken, courses-used)
   else:
-    non-nineteen-track(courses-taken, courses-used)
+    standard-intro-track(courses-taken, courses-used)
   end
 end
 
-
-fun is-upper-cs(cl :: String) -> Boolean:
-  doc: "Checks if the course is a cs course that counts for CS19's second requirement"
-  dept-title = string-substring(cl, 0, 4)
-  course-number = get-course-number(cl)
-  (dept-title == "CSCI") and (course-number >= 200)
-end
-
-fun non-nineteen-track(courses-taken :: List<String>,
+fun cs19-track(courses-taken :: List<String>,
     courses-used :: List<String>) -> {List<String>; Boolean}:
-  doc: "Checks if the classes satisfy the requirements for the typical intro cs track"
-  courses-satisfied(courses-taken, courses-used, [list: is-not-nt-track, is-th])
+  doc: "Checks if the classes satisfy the CS19 track: CSCI 0190 followed by a CSCI course at 0200 or above"
+  courses-satisfied(courses-taken, courses-used, [list: is-cs19, is-cs19-followup])
 end
 
-fun is-not-nt-track(cl :: String) -> Boolean:
-  doc: "Checks if the class is a non cs19 intro cs course"
+fun is-cs19(cl :: String) -> Boolean:
+  doc: "Checks if the class is CSCI 0190"
+  cl == "CSCI 0190"
+end
+
+fun is-cs19-followup(cl :: String) -> Boolean:
+  doc: "Checks if the class is a CSCI course at 0200 or above, which counts as CS19's second course"
+  (get-course-dept(cl) == "CSCI") and (get-course-number(cl) >= 200)
+end
+
+fun standard-intro-track(courses-taken :: List<String>,
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: "Checks if the classes satisfy the standard intro track: CSCI 0111/0150/0170 followed by CSCI 0200"
+  courses-satisfied(courses-taken, courses-used, [list: is-standard-intro, is-csci-0200])
+end
+
+fun is-standard-intro(cl :: String) -> Boolean:
+  doc: "Checks if the class is a standard (non-CS19) intro course: CSCI 0111, 0150, or 0170"
   (cl == "CSCI 0111") or (cl == "CSCI 0150") or (cl == "CSCI 0170")
 end
 
-fun is-th(cl :: String) -> Boolean:
-  doc: "Checks if the class is cs200"
+fun is-csci-0200(cl :: String) -> Boolean:
+  doc: "Checks if the class is CSCI 0200"
   cl == "CSCI 0200"
 end
 
@@ -347,10 +357,10 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
     {courses-used; prereqs-satisfied-math} = math-prereq(classes-taken, empty)
     {courses-used-found; prereqs-satisfied-foundations} = foundations-prereq(classes-taken, courses-used)
     {courses-used-found-math; prereqs-satisfied-found-math} = math-foundations(classes-taken, courses-used-found)
-    {courses-used-four-additional; prereqs-four} = four-electives(classes-taken, courses-used-found-math)
-    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-four-additional)
-    
-    {courses-used-cs-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-tech-electives)
+    # Most constrained requirements first so general electives don't consume courses they need
+    {courses-used-core; prereqs-satisfied-core} = core-cs(classes-taken, courses-used-found-math)
+    {courses-used-tech-electives; prereqs-satisfied-tech} = five-tech-electives(classes-taken, courses-used-core)
+    {courses-used-all; prereqs-four} = four-electives(classes-taken, courses-used-tech-electives)
     can-graduate = L.all(lam(a): a end, [list: prereqs-satisfied-math, 
         prereqs-satisfied-foundations,
         prereqs-satisfied-tech,
@@ -359,7 +369,7 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
         prereqs-four])
     ask:
       | can-graduate then: completed
-      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end, classes-taken)) == 0 then: all-necessary
+      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-all, c)) end, classes-taken)) == 0 then: all-necessary
       | otherwise: has-unnecessary
     end
   end
