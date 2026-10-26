@@ -132,7 +132,6 @@ check "non-technical CS course limits":
   check-reqs([list: "CSCI 1250", "CSCI 1800"]) is all-necessary
   check-reqs([list: "CSCI 1250", "CSCI 1800", "CSCI 1870"]) is all-necessary
 
-  # More than 3 non-technical CS courses triggers has-unnecessary
   check-reqs([list: "CSCI 1250", "CSCI 1800", "CSCI 1870", "CSCI 2200"]) is has-unnecessary
   check-reqs([list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1370"]) is has-unnecessary
 end
