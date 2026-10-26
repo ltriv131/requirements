@@ -389,15 +389,12 @@ fun five-tech-electives(courses-taken :: List<String>, courses-used :: List<Stri
   keep-1951 = not(courses-used.any(lam(course): 
       [list: "DATA 1340", "EEPS 1340"].member(course) end))
   keep-1420 = not(courses-used.any(lam(course): course == "ENGN 2520" end))
-  spy: keep-1420 end
-  
   courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
-  
+
   satisfied-courses = courses-left.filter(lam(course):
-      (get-course-dept(course) == "CSCI") and
-      (get-course-number(course) >= ONE-THOUSAND-LEVEL-THRESHOLD) and
-      ((course <> "CSCI 1951") or keep-1951) and
-    ((course <> "CSCI 1420") or keep-1420) end)
+      is-tech-1000-cs-no-conflict(course) or
+      ((course == "CSCI 1951") and keep-1951) or
+      ((course == "CSCI 1420") and keep-1420) end)
   
   credits = num-min(TECH-1000-CREDITS, length(satisfied-courses))
   {courses-used.append(satisfied-courses.take(credits)); (credits >= TECH-1000-CREDITS)}
@@ -650,7 +647,11 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
   {List<String>; Boolean}:
   doc: ``` Determines whether the 4 additional electives requirement is satisfied, and returns 
        the courses used to satisfy it ```
-  courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
+  # cross-listed courses can't count if their CSCI version was already used
+  blocked = (if courses-used.member("CSCI 1951"): [list: "DATA 1340", "EEPS 1340"] else: empty end)
+    .append(if courses-used.member("CSCI 1420"): [list: "ENGN 2520"] else: empty end)
+  courses-left = courses-taken.filter(lam(course):
+      not(courses-used.member(course)) and not(blocked.member(course)) end)
   cs-and-outside = get-cs-and-outside-electives(courses-left)
   
   taken-non-cs = cs-and-outside.filter(lam(course): get-course-dept(course) <> "CSCI" end)
