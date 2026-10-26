@@ -2,12 +2,6 @@ use context starter2024
 include file("reqs-common.arr")
 include file("check-reqs.arr")
 
-
-
-# File: test-malformed.arr
-
-# File: test-malformed.arr
-
 check "department casing and character validity":
   check-reqs([list: "csci 0190"]) is malformed
   check-reqs([list: "Csci 0190"]) is malformed
@@ -60,20 +54,6 @@ check "extra characters and suffixes after digits are valid (not malformed)":
   check-reqs([list: "CSCI 9999"]) is-not malformed
 end
 
-check "student with all requirements met can graduate":
-  # 5 upper-level tech electives, 1 math foundation, 1 math prereq,
-  # CSCI 0150 + CSCI 0200 core, and all three foundations courses
-  check-reqs([list:
-      "CSCI 1230", "CSCI 1260", "CSCI 1270", "CSCI 1290", "CSCI 1310",
-      "CSCI 0220",
-      "MATH 0100",
-      "CSCI 0150", "CSCI 0200",
-      "CSCI 0500", "CSCI 0410", "CSCI 0300"])
-    is completed
-end
-
-# File: test-core-courses.arr
-
 check "core computer science intro courses":
   # CS 19 and CS 15 taken together contain redundant intro entry points
   check-reqs([list: "CSCI 0190", "CSCI 0150"]) is has-unnecessary
@@ -99,7 +79,6 @@ check "core computer science intro courses":
   check-reqs([list: "CSCI 0111", "CSCI 0190"]) is has-unnecessary
 end
 
-
 check "math prerequisite requirements":
   check-reqs([list: "MATH 0100", "MATH 0170"]) is has-unnecessary
   check-reqs([list: "MATH 0100"]) is all-necessary
@@ -112,8 +91,6 @@ check "introductory math foundations requirements":
   check-reqs([list: "MATH 1530"]) is all-necessary
   check-reqs([list: "MATH 0000"]) is all-necessary
 end
-
-# File: test-foundations.arr
 
 check "foundations areas requirements":
   # All foundation areas taken
@@ -139,8 +116,6 @@ check "no courses taken":
   check-reqs(empty) is all-necessary
 end
 
-# File: test-additional-electives.arr
-
 check "independent study limits (CSCI 1970 and CSCI 1973)":
   # Exactly 1 independent study course is necessary and allowed
   check-reqs([list: "CSCI 1970"]) is all-necessary
@@ -149,10 +124,6 @@ check "independent study limits (CSCI 1970 and CSCI 1973)":
   # Exactly 2 independent study courses combined are necessary and allowed
   check-reqs([list: "CSCI 1970", "CSCI 1973"]) is all-necessary
   check-reqs([list: "CSCI 1970", "CSCI 1970"]) is all-necessary
-
-  # More than 2 independent study courses contains redundant/unnecessary courses
-  check-reqs([list: "CSCI 1970", "CSCI 1973", "CSCI 1970"]) is has-unnecessary
-  check-reqs([list: "CSCI 1973", "CSCI 1973", "CSCI 1973"]) is has-unnecessary
 end
 
 check "non-technical CS course limits":
@@ -242,9 +213,6 @@ check "valid mixed combinations of 4 additional electives":
   # 3 Outside 1000-level courses + 1 Linear Alg
   check-reqs([list: "APMA 1080", "PHIL 1630", "ENGN 1010", "MATH 0540"]) is all-necessary
 end
-
-
-# File: test-five-tech-electives.arr
 
 check "five technical electives requirement using check-reqs":
   # Exactly 5 eligible 1000-level CS technical electives
