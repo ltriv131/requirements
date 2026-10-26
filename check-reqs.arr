@@ -1132,15 +1132,17 @@ end
 
 
 
-fun core-cs(courses-taken :: List<String>, courses-used :: List<String>) -> {List<String>; Boolean}:
-  doc: "Checks if the courses taken satisfy the core cs requirements"
+fun core-cs(courses-taken :: List<String>,
+    courses-used :: List<String>) -> {List<String>; Boolean}:
+  doc: ```Returns courses used to satisfy the core cs requirement appended and if it was satisfied,
+       using the CS19 track if CSCI 0190 was taken and the standard intro track otherwise```
   if courses-taken.member("CSCI 0190"):
     courses-satisfied(courses-taken, courses-used, [list: 
         lam(course): course == "CSCI 0190" end, 
         lam(course): (get-course-dept(course) == "CSCI") and 
         (get-course-number(course) >= 200) end])
   else:
-    non-nineteen-track(courses-taken, courses-used)
+    standard-intro-track(courses-taken, courses-used)
   end
 end
 
