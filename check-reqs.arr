@@ -389,10 +389,13 @@ fun five-tech-electives(courses-taken :: List<String>, courses-used :: List<Stri
   keep-1951 = not(courses-used.any(lam(course): 
       [list: "DATA 1340", "EEPS 1340"].member(course) end))
   keep-1420 = not(courses-used.any(lam(course): course == "ENGN 2520" end))
+  spy: keep-1420 end
+  
   courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
   
   satisfied-courses = courses-left.filter(lam(course):
-      is-tech-1000-cs-no-conflict(course) and
+      (get-course-dept(course) == "CSCI") and
+      (get-course-number(course) >= ONE-THOUSAND-LEVEL-THRESHOLD) and
       ((course <> "CSCI 1951") or keep-1951) and
     ((course <> "CSCI 1420") or keep-1420) end)
   
@@ -465,6 +468,13 @@ check "five-tech-electives caps appended courses to the required credit target":
   result.{0} is [list: "CSCI 0150", "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
 end
 
+check "five-tech-electives takes 1420 if no conflicts":
+  courses-taken = [list: "CSCI 1420"]
+  result = five-tech-electives(courses-taken, [list: ])
+  
+  result.{1} is false
+  result.{0} is [list: "CSCI 1420"]
+end
 
 
 fun get-lin-alg(courses-left :: List<String>) -> List<String>:
