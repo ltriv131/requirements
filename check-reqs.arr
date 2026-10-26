@@ -37,6 +37,8 @@ OUTSIDE-1000-LEVELS-NO-CONFLICT = [list: "APMA 1080", "APMA 1160", "APMA 1690", 
   "PHIL 1675", "PHIL 1835", "PHIL 1855", "PHIL 1880", "PHYS 1590", "PHYS 1600", "PHYS 2550", 
   "PHP  1855", "PHP  1689", "PLCY 1702", "ARTS 1550"]
 
+MATH-FOUNDATION-OPTIONS = [list: "CSCI 0220", "MATH 1530"]
+
 MAX-LIN-ALG = 1
 MAX-APMA-1650-1655 = 1
 MAX-NON-TECH = 3
@@ -927,48 +929,55 @@ end
 
 
 
-fun math-foundations(courses-taken :: List<String>, courses-used :: List<String>) -> 
-  {List<String>; Boolean}:
-  doc: ```Returns courses used to satisfy requirement and whether requirement was satisfied 
-       for math foundation courses```
-  courses-satisfied(courses-taken, courses-used, [list: 
-      lam(course): (course == "CSCI 0220") or (course == "MATH 1530") end])
+fun math-foundations(courses-taken :: List<String>, courses-used :: List<String>,
+    choice :: String) -> {List<String>; Boolean}:
+  doc: ```Returns courses used to satisfy requirement and whether requirement was satisfied
+       for math foundation courses, using choice (CSCI 0220 or MATH 1530) to satisfy it```
+  courses-satisfied(courses-taken, courses-used, [list:
+      lam(course): (course == choice) and MATH-FOUNDATION-OPTIONS.member(course) end])
 end
 
-check "math-foundations returns true when CSCI 0220 is taken":
+check "math-foundations returns true when CSCI 0220 is taken and chosen":
   courses-taken = [list: "CSCI 0220", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-foundations(courses-taken, courses-used)
+  result = math-foundations(courses-taken, courses-used, "CSCI 0220")
 
   result.{1} is true
   result.{0} is [list: "CSCI 0220"]
 end
 
-check "math-foundations returns true when MATH 1530 is taken":
+check "math-foundations returns true when MATH 1530 is taken and chosen":
   courses-taken = [list: "MATH 1530", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-foundations(courses-taken, courses-used)
+  result = math-foundations(courses-taken, courses-used, "MATH 1530")
 
   result.{1} is true
   result.{0} is [list: "MATH 1530"]
 end
 
-check "math-foundations returns false when neither course is taken":
-  courses-taken = [list: "MATH 0100", "CSCI 0111"]
-  courses-used = [list: ]
+check "math-foundations uses only the chosen course when both are taken":
+  courses-taken = [list: "CSCI 0220", "MATH 1530"]
 
-  result = math-foundations(courses-taken, courses-used)
+  math-foundations(courses-taken, empty, "MATH 1530") is {[list: "MATH 1530"]; true}
+  math-foundations(courses-taken, empty, "CSCI 0220") is {[list: "CSCI 0220"]; true}
+end
 
-  result.{1} is false
+check "math-foundations returns false when the chosen course is not taken":
+  math-foundations([list: "MATH 0100", "CSCI 0111"], empty, "CSCI 0220").{1} is false
+  math-foundations([list: "MATH 1530"], empty, "CSCI 0220").{1} is false
+end
+
+check "math-foundations rejects a choice that is not a math foundation course":
+  math-foundations([list: "CSCI 0111"], empty, "CSCI 0111") is {empty; false}
 end
 
 check "math-foundations returns false when qualifying course is already in courses-used":
   courses-taken = [list: "CSCI 0220"]
   courses-used = [list: "CSCI 0220"]
 
-  result = math-foundations(courses-taken, courses-used)
+  result = math-foundations(courses-taken, courses-used, "CSCI 0220")
 
   result.{1} is false
 end
@@ -977,7 +986,7 @@ check "math-foundations preserves existing courses-used in the output tuple":
   courses-taken = [list: "MATH 1530", "CSCI 0111"]
   courses-used = [list: "CSCI 0150"]
 
-  result = math-foundations(courses-taken, courses-used)
+  result = math-foundations(courses-taken, courses-used, "MATH 1530")
 
   result.{1} is true
   result.{0} is [list: "MATH 1530", "CSCI 0150"]
@@ -985,7 +994,89 @@ end
 
 
 
-fun math-prereq(courses-taken :: List<String>, 
+fun is-cs19-only-course(course :: String) -> Boolean:
+  doc: ``` Determines whether a course can fill the CS19 track's additional course but can't
+       count as one of the 4 additional electives ```
+  (get-course-dept(course) == "CSCI") and
+  (get-course-number(course) >= 200) and
+  (get-course-number(course) < ONE-THOUSAND-LEVEL-THRESHOLD) and
+  not([list: "CSCI 0220", "CSCI 0320"].member(course))
+end
+
+check "is-cs19-only-course accepts CSCI courses between 0200 and 0999":
+  is-cs19-only-course("CSCI 0200") is true
+  is-cs19-only-course("CSCI 0330") is true
+  is-cs19-only-course("CSCI 0500") is true
+end
+
+check "is-cs19-only-course rejects CSCI 0220 and CSCI 0320":
+  is-cs19-only-course("CSCI 0220") is false
+  is-cs19-only-course("CSCI 0320") is false
+end
+
+check "is-cs19-only-course rejects intro, 1000 level, and non-CSCI courses":
+  is-cs19-only-course("CSCI 0190") is false
+  is-cs19-only-course("CSCI 0150") is false
+  is-cs19-only-course("CSCI 1010") is false
+  is-cs19-only-course("CSCI 1250") is false
+  is-cs19-only-course("MATH 0520") is false
+end
+
+
+
+fun choose-math-foundation(courses-taken :: List<String>, courses-used :: List<String>) ->
+  String:
+  doc: ``` Chooses which of CSCI 0220 and MATH 1530 should satisfy math foundations. MATH 1530
+       can also be an elective, and CSCI 0220 can also fill the CS19 additional course, so
+       MATH 1530 is only chosen when CS19 has no other course the electives can't use ```
+  courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
+  has-cs19-spare = courses-left.any(is-cs19-only-course) or
+    (courses-left.filter(is-non-tech-1000-cs-no-conflict).length() > MAX-NON-TECH)
+  ask:
+    | not(courses-left.member("MATH 1530")) then: "CSCI 0220"
+    | not(courses-left.member("CSCI 0220")) then: "MATH 1530"
+    | courses-taken.member("CSCI 0190") and not(has-cs19-spare) then: "MATH 1530"
+    | otherwise: "CSCI 0220"
+  end
+end
+
+check "choose-math-foundation picks whichever option is the only one taken":
+  choose-math-foundation([list: "MATH 1530", "CSCI 0190"], empty) is "MATH 1530"
+  choose-math-foundation([list: "CSCI 0220", "CSCI 0190"], empty) is "CSCI 0220"
+  choose-math-foundation([list: "MATH 1530", "CSCI 0220"], [list: "CSCI 0220"]) is "MATH 1530"
+end
+
+check "choose-math-foundation picks CSCI 0220 outside the CS19 track":
+  choose-math-foundation([list: "MATH 1530", "CSCI 0220", "CSCI 0150"], empty) is "CSCI 0220"
+end
+
+check "choose-math-foundation picks MATH 1530 for CS19 when CSCI 0220 is needed for CS19":
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220"], empty) is "MATH 1530"
+  # CSCI 0320 and technical courses can count as electives, so they aren't spares
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 0320",
+      "CSCI 1010"], empty) is "MATH 1530"
+  # CSCI 0300 is already used for foundations
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 0300"],
+    [list: "CSCI 0300"]) is "MATH 1530"
+  # Only 3 non-technical courses, which can all count as electives
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 1250",
+      "CSCI 1280", "CSCI 1360"], empty) is "MATH 1530"
+end
+
+check "choose-math-foundation picks CSCI 0220 for CS19 when another course can fill CS19":
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 0200"], empty) is
+  "CSCI 0220"
+  # CSCI 0330 is left over after CSCI 0300 is used for foundations
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 0300",
+      "CSCI 0330"], [list: "CSCI 0300"]) is "CSCI 0220"
+  # A 4th non-technical course can't count as an elective
+  choose-math-foundation([list: "CSCI 0190", "MATH 1530", "CSCI 0220", "CSCI 1250",
+      "CSCI 1280", "CSCI 1360", "CSCI 1800"], empty) is "CSCI 0220"
+end
+
+
+
+fun math-prereq(courses-taken :: List<String>,
     courses-used :: List<String>) -> {List<String>; Boolean}:
   doc: "Returns courses used to satisfy math prereq and if prereq was satisfied"
   courses-satisfied(courses-taken, courses-used, [list: 
@@ -1142,7 +1233,7 @@ fun core-cs(courses-taken :: List<String>,
         lam(course): (get-course-dept(course) == "CSCI") and 
         (get-course-number(course) >= 200) end])
   else:
-    standard-intro-track(courses-taken, courses-used)
+    non-nineteen-track(courses-taken, courses-used)
   end
 end
 
@@ -1226,20 +1317,23 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
   if not(length(courses-filtered) == length(classes-taken)):
     malformed
   else:
-    {courses-used; prereqs-satisfied-math} = 
+    {courses-used; prereqs-satisfied-math} =
       math-prereq(classes-taken, empty)
-    {courses-used-found; prereqs-satisfied-foundations} = 
+    {courses-used-found; prereqs-satisfied-foundations} =
       foundations-prereq(classes-taken, courses-used)
-    {courses-used-found-math; prereqs-satisfied-found-math} = 
-      math-foundations(classes-taken, courses-used-found)
-    {courses-used-four-additional; prereqs-four} = 
-      four-electives(classes-taken, courses-used-found-math)
-    {courses-used-tech-electives; prereqs-satisfied-tech} = 
-      five-tech-electives(classes-taken, courses-used-four-additional)
-    {courses-used-cs-core; prereqs-satisfied-core} = 
-      core-cs(classes-taken, courses-used-tech-electives)
-    
-    can-graduate = [list: prereqs-satisfied-math, 
+    {courses-used-found-math; prereqs-satisfied-found-math} =
+      math-foundations(classes-taken, courses-used-found,
+        choose-math-foundation(classes-taken, courses-used-found))
+
+    {courses-used-tech-electives; prereqs-satisfied-tech} =
+      five-tech-electives(classes-taken, courses-used-found-math)
+
+    {courses-used-four-additional; prereqs-four} =
+      four-electives(classes-taken, courses-used-tech-electives)
+    {courses-used-cs-core; prereqs-satisfied-core} =
+      core-cs(classes-taken, courses-used-four-additional)
+
+    can-graduate = [list: prereqs-satisfied-math,
       prereqs-satisfied-foundations,
       prereqs-satisfied-tech,
       prereqs-satisfied-found-math,
@@ -1247,7 +1341,7 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
       prereqs-four].all(lam(bool): bool end)
     ask:
       | can-graduate then: completed
-      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end, 
+      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end,
             classes-taken)) == 0 then: all-necessary
       | otherwise: has-unnecessary
     end
