@@ -87,6 +87,7 @@ end
 
 check "introductory math foundations requirements":
   check-reqs([list: "CSCI 0220", "MATH 1530"]) is all-necessary
+  check-reqs([list: "MATH 1530", "CSCI 0220"]) is all-necessary
   check-reqs([list: "CSCI 0220"]) is all-necessary
   check-reqs([list: "MATH 1530"]) is all-necessary
   check-reqs([list: "MATH 0000"]) is all-necessary
@@ -344,4 +345,55 @@ check "optimal course allocation and reuse constraints":
     "CSCI 1380", "CSCI 1670", "CSCI 1680", "CSCI 1730",
     "CSCI 1950"
   ]) is-not completed
+end
+
+check "math foundations allocation: MATH 1530 needed for math foundations so CSCI 0220 fills the CS19 slot":
+  # Four electives can use APMA 1690 instead of MATH 1530; the CS19 slot has no other option
+  check-reqs([list:
+    "MATH 0100", "CSCI 0190", "CSCI 0500", "CSCI 0410", "CSCI 0300",
+    "CSCI 0220", "MATH 1530",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "MATH 0520", "APMA 1080", "APMA 1160", "APMA 1690"
+  ]) is completed
+  check-reqs([list:
+    "MATH 0100", "CSCI 0190", "CSCI 0500", "CSCI 0410", "CSCI 0300",
+    "MATH 1530", "CSCI 0220",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "MATH 0520", "APMA 1080", "APMA 1160", "APMA 1690"
+  ]) is completed
+end
+
+check "math foundations allocation: CSCI 0200 fills the CS19 slot so MATH 1530 goes to electives":
+  check-reqs([list:
+    "MATH 0100", "CSCI 0190", "CSCI 0500", "CSCI 0410", "CSCI 0300",
+    "CSCI 0220", "MATH 1530", "CSCI 0200",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "MATH 0520", "APMA 1080", "APMA 1160"
+  ]) is completed
+  check-reqs([list:
+    "MATH 0100", "CSCI 0190", "CSCI 0500", "CSCI 0410", "CSCI 0300",
+    "MATH 1530", "CSCI 0220", "CSCI 0200",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "MATH 0520", "APMA 1080", "APMA 1160"
+  ]) is completed
+end
+
+check "math foundations allocation: a fourth non-technical course fills the CS19 slot":
+  # Only 3 non-technical courses count as electives, so CSCI 1800 can only fill the CS19 slot
+  check-reqs([list:
+    "MATH 0100", "CSCI 0190", "CSCI 0500", "CSCI 0410", "CSCI 0300",
+    "MATH 1530", "CSCI 0220",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1800"
+  ]) is completed
+end
+
+check "math foundations allocation: standard track keeps MATH 1530 for electives":
+  # Without CS19, CSCI 0220 has no other use, so MATH 1530 must count as an elective
+  check-reqs([list:
+    "MATH 0100", "CSCI 0150", "CSCI 0200", "CSCI 0500", "CSCI 0410", "CSCI 0330",
+    "MATH 1530", "CSCI 0220",
+    "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810",
+    "MATH 0520", "APMA 1080", "APMA 1160"
+  ]) is completed
 end
