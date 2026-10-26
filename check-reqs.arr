@@ -55,6 +55,13 @@ CONFLICT-WITH-ENGN-2520 = 1420
 INDEPENDENT-STUDY-1 = 1970
 INDEPENDENT-STUDY-2 = 1973
 
+DEPT-START = 0
+DEPT-END = 4
+SPACE-INDEX = 4
+NUM-START = 5
+NUM-END = 9
+CS19-SECOND-COURSE-THRESHOLD = 200
+
 fun is-digit(char :: String) -> Boolean:
   doc: "Checks if a single-character string is a numeric digit"
   (char >= "0") and (char <= "9")
@@ -189,10 +196,10 @@ fun is-valid-course-title(course-title :: String) -> Boolean:
   if string-length(course-title) < COURSE-TITLE-LENGTH:
     false
   else:
-    dept-title = string-substring(course-title, 0, 4)
-    space-char = string-substring(course-title, 4, 5)
-    course-number = string-substring(course-title, 5, 9)
-    
+    dept-title = string-substring(course-title, DEPT-START, DEPT-END)
+    space-char = string-substring(course-title, SPACE-INDEX, NUM-START)
+    course-number = string-substring(course-title, NUM-START, NUM-END)
+
     is-valid-dept(dept-title) and (space-char == " ") and is-valid-num(course-number)
   end
 end
@@ -238,7 +245,7 @@ end
 
 fun get-course-number(course-title :: String%(is-valid-course-title)) -> Number:
   doc: "Returns the course number from course-title. Raises error if title is invalid"
-  cases (Option) string-to-number(string-substring(course-title, 5, 9)):
+  cases (Option) string-to-number(string-substring(course-title, NUM-START, NUM-END)):
     | none => raise("course-title is malformed")
     | some(num) => num
   end
@@ -260,7 +267,7 @@ end
 
 fun get-course-dept(course-title :: String%(is-valid-course-title)) -> String:
   doc: "Returns the course department label from course-title. Raises error if title is invalid"
-  string-substring(course-title, 0, 4)
+  string-substring(course-title, DEPT-START, DEPT-END)
 end
 
 check "get-course-dept extracts standard 4-letter department codes":
@@ -394,8 +401,8 @@ fun five-tech-electives(courses-taken :: List<String>, courses-used :: List<Stri
   satisfied-courses = courses-left.filter(lam(course):
       is-tech-1000-cs-no-conflict(course) or
       ((course == "CSCI 1951") and keep-1951) or
-      ((course == "CSCI 1420") and keep-1420) end)
-  
+    ((course == "CSCI 1420") and keep-1420) end)
+
   credits = num-min(TECH-1000-CREDITS, length(satisfied-courses))
   {courses-used.append(satisfied-courses.take(credits)); (credits >= TECH-1000-CREDITS)}
 end
@@ -403,80 +410,80 @@ end
 check "five-tech-electives returns true when exactly 5 eligible tech courses are taken":
   courses-taken = [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
   courses-used = [list: ]
-  
-  result = five-tech-electives(courses-taken, courses-used)
-  
-  result.{1} is true
-  result.{0} is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, courses-used)
+
+  satisfied is true
+  used is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
 end
 
 check "five-tech-electives returns false when fewer than 5 eligible tech courses are taken":
   courses-taken = [list: "CSCI 1010", "CSCI 1230", "CSCI 1410"]
   courses-used = [list: ]
-  
-  result = five-tech-electives(courses-taken, courses-used)
-  
-  result.{1} is false
-  result.{0} is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, courses-used)
+
+  satisfied is false
+  used is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410"]
 end
 
 check "five-tech-electives filters out non-CSCI departments and courses below 1000 level":
   courses-taken = [list: "CSCI 0111", "MATH 1000", "CSCI 1010", "CSCI 1230", "CSCI 1410", 
     "CSCI 1670", "CSCI 1810"]
   courses-used = [list: ]
-  
-  result = five-tech-electives(courses-taken, courses-used)
-  
-  result.{1} is true
-  result.{0} is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, courses-used)
+
+  satisfied is true
+  used is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
 end
 
 check "five-tech-electives ignores courses that are already present in courses-used":
   courses-taken = [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
   courses-used = [list: "CSCI 1010"]
-  
-  result = five-tech-electives(courses-taken, courses-used)
-  
-  result.{1} is false
-  result.{0} is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, courses-used)
+
+  satisfied is false
+  used is [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
 end
 
 check "five-tech-electives enforces exclusion rules for CSCI 1951 and CSCI 1420":
   courses-taken = [list: "CSCI 1951", "CSCI 1420", "CSCI 1010", "CSCI 1230", "CSCI 1670"]
-  
+
   # CSCI 1951 should be excluded if DATA 1340 or EEPS 1340 is used
   # CSCI 1420 should be excluded if ENGN 2520 is used
   used-with-conflict = [list: "DATA 1340", "ENGN 2520"]
-  
-  result = five-tech-electives(courses-taken, used-with-conflict)
-  
-  result.{1} is false
-  result.{0} is [list: "DATA 1340", "ENGN 2520", "CSCI 1010", "CSCI 1230", "CSCI 1670"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, used-with-conflict)
+
+  satisfied is false
+  used is [list: "DATA 1340", "ENGN 2520", "CSCI 1010", "CSCI 1230", "CSCI 1670"]
 end
 
 check "five-tech-electives caps appended courses to the required credit target":
   courses-taken = [list: "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810", 
     "CSCI 1950"]
   courses-used = [list: "CSCI 0150"]
-  
-  result = five-tech-electives(courses-taken, courses-used)
-  
-  result.{1} is true
-  result.{0} is [list: "CSCI 0150", "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
+
+  {used; satisfied} = five-tech-electives(courses-taken, courses-used)
+
+  satisfied is true
+  used is [list: "CSCI 0150", "CSCI 1010", "CSCI 1230", "CSCI 1410", "CSCI 1670", "CSCI 1810"]
 end
 
 check "five-tech-electives takes 1420 if no conflicts":
   courses-taken = [list: "CSCI 1420"]
-  result = five-tech-electives(courses-taken, [list: ])
-  
-  result.{1} is false
-  result.{0} is [list: "CSCI 1420"]
+  {used; satisfied} = five-tech-electives(courses-taken, [list: ])
+
+  satisfied is false
+  used is [list: "CSCI 1420"]
 end
 
 
 fun get-lin-alg(courses-left :: List<String>) -> List<String>:
-  doc: "produces at most 3 linear algebra courses that count towards the requirement"
-  
+  doc: "produces at most MAX-LIN-ALG linear algebra courses that count towards the requirement"
+
   lin-alg = courses-left.filter(lam(course): [list: "MATH 0520", "MATH 0540", "APMA 0260"]
       .member(course) end)
   credit-lin-alg = num-min(MAX-LIN-ALG, lin-alg.length())
@@ -525,7 +532,7 @@ end
 
 
 fun get-non-tech-csci-1000(courses-left :: List<String>) -> List<String>:
-  doc: "Produces at most 3 non-tech csci 1000 level courses without conflicts"
+  doc: "Produces at most MAX-NON-TECH non-tech csci 1000 level courses without conflicts"
   non-tech-csci-1000 = courses-left.filter(is-non-tech-1000-cs-no-conflict)
   credit-non-tech-csci-1000 = num-min(MAX-NON-TECH, non-tech-csci-1000.length())
   non-tech-csci-1000.take(credit-non-tech-csci-1000)
@@ -556,7 +563,7 @@ end
 fun get-outside-courses(courses-left :: List<String>) -> List<String>:
   doc: ``` Produces the courses outside the CS department that satisfy requirements. 
        Prioritizes non-cs courses ```
-  
+
   outside-csci = courses-left.filter(lam(course): 
     OUTSIDE-1000-LEVELS-NO-CONFLICT.member(course) end)
   data-eeps-1340-csci-1951 = 
@@ -573,7 +580,7 @@ fun get-outside-courses(courses-left :: List<String>) -> List<String>:
       | courses-left.member("CSCI 1420") then: [list: "CSCI 1420"]
       | otherwise: empty
     end
-  
+
   outside-csci.append(data-eeps-1340-csci-1951).append(engn-2520-csci-1420)
 end
 
@@ -595,7 +602,7 @@ end
 
 check "get-outside-courses correctly appends all three category results together":
   courses = [list: "APMA 1080", "DATA 1030", "EEPS 1340", "CSCI 1420"]
-  
+
   get-outside-courses(courses) is [list: "APMA 1080", "DATA 1030", "EEPS 1340", "CSCI 1420"]
 end
 
@@ -651,15 +658,15 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
   blocked = (if courses-used.member("CSCI 1951"): [list: "DATA 1340", "EEPS 1340"] else: empty end)
     .append(if courses-used.member("CSCI 1420"): [list: "ENGN 2520"] else: empty end)
   courses-left = courses-taken.filter(lam(course):
-      not(courses-used.member(course)) and not(blocked.member(course)) end)
+    not(courses-used.member(course)) and not(blocked.member(course)) end)
   cs-and-outside = get-cs-and-outside-electives(courses-left)
-  
+
   taken-non-cs = cs-and-outside.filter(lam(course): get-course-dept(course) <> "CSCI" end)
   taken-non-tech = cs-and-outside.filter(lam(course): (get-course-dept(course) == "CSCI") and 
     NON-TECHNICAL.member(course) end)
   taken-cs = cs-and-outside.filter(lam(course): (get-course-dept(course) == "CSCI") and
     not(NON-TECHNICAL.member(course)) end)
-  
+
   used-to-append = get-lin-alg(courses-left)
     .append(courses-left.filter(lam(course): (get-course-dept(course) == "MATH") and 
       (get-course-number(course) >= ONE-THOUSAND-LEVEL-THRESHOLD) end))
@@ -667,10 +674,10 @@ fun four-electives(courses-taken :: List<String>, courses-used :: List<String>) 
     .append(taken-non-cs.take(num-min(MAX-OUTSIDE, taken-non-cs.length())))
     .append(taken-non-tech.take(num-min(MAX-NON-TECH, taken-non-tech.length())))
     .append(taken-cs)
-  
+
   combined-credits = num-min(ELECTIVES-CREDITS, used-to-append.length())
   new-used = courses-used.append(used-to-append.take(combined-credits))
-  
+
   {new-used; combined-credits == ELECTIVES-CREDITS}
 end
 
@@ -678,40 +685,40 @@ check "four-electives satisfies requirement when enough eligible electives are p
   courses-taken = [list: "MATH 1000", "CSCI 0320", "CSCI 1010", "CSCI 1230"]
   courses-used = [list: ]
 
-  result = four-electives(courses-taken, courses-used)
+  {used; satisfied} = four-electives(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "MATH 1000", "CSCI 0320", "CSCI 1010", "CSCI 1230"]
+  satisfied is true
+  used is [list: "MATH 1000", "CSCI 0320", "CSCI 1010", "CSCI 1230"]
 end
 
 check "four-electives enforces MAX-OUTSIDE limit of 3":
   courses-taken = [list: "APMA 1080", "DATA 1030", "PHIL 1630", "PHYS 1590", "CSCI 1010"]
   courses-used = [list: ]
 
-  result = four-electives(courses-taken, courses-used)
+  {used; satisfied} = four-electives(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "APMA 1080", "DATA 1030", "PHIL 1630", "CSCI 1010"]
+  satisfied is true
+  used is [list: "APMA 1080", "DATA 1030", "PHIL 1630", "CSCI 1010"]
 end
 
 check "four-electives enforces MAX-NON-TECH limit of 3":
   courses-taken = [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1800", "CSCI 1010"]
   courses-used = [list: ]
 
-  result = four-electives(courses-taken, courses-used)
+  {used; satisfied} = four-electives(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1010"]
+  satisfied is true
+  used is [list: "CSCI 1250", "CSCI 1280", "CSCI 1360", "CSCI 1010"]
 end
 
 check "four-electives returns false when available unused courses are insufficient":
   courses-taken = [list: "MATH 1000", "CSCI 0320"]
   courses-used = [list: ]
 
-  result = four-electives(courses-taken, courses-used)
+  {used; satisfied} = four-electives(courses-taken, courses-used)
 
-  result.{1} is false
-  result.{0} is [list: "MATH 1000", "CSCI 0320"]
+  satisfied is false
+  used is [list: "MATH 1000", "CSCI 0320"]
 end
 
 check "four-electives counts 4 credits with no conflicts":
@@ -824,49 +831,49 @@ end
 check "courses-satisfied returns true with empty prerequisites list":
   courses-taken = [list: "CSCI 0111", "MATH 0100"]
   courses-used = [list: ]
-  
-  result = courses-satisfied(courses-taken, courses-used, [list: ])
-  result.{1} is true
-  result.{0} is [list: ]
+
+  {used; satisfied} = courses-satisfied(courses-taken, courses-used, [list: ])
+  satisfied is true
+  used is [list: ]
 end
 
 check "courses-satisfied accumulates used courses when all prerequisites are met":
   is-cs-intro = lam(c :: String) -> Boolean: (c == "CSCI 0111") or (c == "CSCI 0150") end
   is-math-intro = lam(c :: String) -> Boolean: c == "MATH 0100" end
-  
+
   courses-taken = [list: "CSCI 0111", "MATH 0100", "CSCI 0200"]
   courses-used = [list: ]
   prereqs = [list: is-cs-intro, is-math-intro]
-  
-  result = courses-satisfied(courses-taken, courses-used, prereqs)
-  result.{1} is true
-  result.{0} is [list: "MATH 0100", "CSCI 0111"]
+
+  {used; satisfied} = courses-satisfied(courses-taken, courses-used, prereqs)
+  satisfied is true
+  used is [list: "MATH 0100", "CSCI 0111"]
 end
 
 check "courses-satisfied returns false if any prerequisite cannot be satisfied":
   is-cs-intro = lam(c :: String) -> Boolean: c == "CSCI 0111" end
   is-advanced-math = lam(c :: String) -> Boolean: c == "MATH 0520" end
-  
+
   courses-taken = [list: "CSCI 0111", "MATH 0100"]
   courses-used = [list: ]
   prereqs = [list: is-cs-intro, is-advanced-math]
-  
-  result = courses-satisfied(courses-taken, courses-used, prereqs)
-  result.{1} is false
-  result.{0} is [list: "CSCI 0111"]
+
+  {used; satisfied} = courses-satisfied(courses-taken, courses-used, prereqs)
+  satisfied is false
+  used is [list: "CSCI 0111"]
 end
 
 check "courses-satisfied does not re-use courses that are already in courses-used":
-  is-cs-intro1 = lam(c :: String) -> Boolean: (c == "CSCI 0111") or (c == "CSCI 0150") end
-  is-cs-intro2 = lam(c :: String) -> Boolean: (c == "CSCI 0111") or (c == "CSCI 0200") end
-  
+  is-cs-intro-1 = lam(c :: String) -> Boolean: (c == "CSCI 0111") or (c == "CSCI 0150") end
+  is-cs-intro-2 = lam(c :: String) -> Boolean: (c == "CSCI 0111") or (c == "CSCI 0200") end
+
   courses-taken = [list: "CSCI 0111"]
   courses-used = [list: ]
-  prereqs = [list: is-cs-intro1, is-cs-intro2]
-  
-  result = courses-satisfied(courses-taken, courses-used, prereqs)
-  result.{1} is false
-  result.{0} is [list: "CSCI 0111"]
+  prereqs = [list: is-cs-intro-1, is-cs-intro-2]
+
+  {used; satisfied} = courses-satisfied(courses-taken, courses-used, prereqs)
+  satisfied is false
+  used is [list: "CSCI 0111"]
 end
 
 
@@ -884,58 +891,58 @@ check "foundations-prereq returns true when all prerequisites are met with CSCI 
   courses-taken = [list: "CSCI 0500", "CSCI 0410", "CSCI 0330"]
   courses-used = [list: ]
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {used; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500"]
+  satisfied is true
+  used is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500"]
 end
 
 check "foundations-prereq returns true when all prerequisites are met with CSCI 0300":
   courses-taken = [list: "CSCI 0500", "CSCI 0410", "CSCI 0300"]
   courses-used = [list: ]
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {used; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0300", "CSCI 0410", "CSCI 0500"]
+  satisfied is true
+  used is [list: "CSCI 0300", "CSCI 0410", "CSCI 0500"]
 end
 
 check "foundations-prereq returns false when one or more prerequisites are missing":
   courses-taken = [list: "CSCI 0500", "CSCI 0410"]
   courses-used = [list: ]
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {_; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "foundations-prereq returns false if any required course is already in courses-used":
   courses-taken = [list: "CSCI 0500", "CSCI 0410", "CSCI 0330"]
   courses-used = [list: "CSCI 0500"]
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {_; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "foundations-prereq preserves previously used courses in the returned list":
   courses-taken = [list: "CSCI 0500", "CSCI 0410", "CSCI 0330"]
   courses-used = [list: "MATH 0100"]
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {used; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500", "MATH 0100"]
+  satisfied is true
+  used is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500", "MATH 0100"]
 end
 
 check "foundations-prereq counts 0330/0300 only once":
   courses-taken = [list: "CSCI 0500", "CSCI 0410", "CSCI 0330", "CSCI 0300"]
   courses-used = empty
 
-  result = foundations-prereq(courses-taken, courses-used)
+  {used; satisfied} = foundations-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500"]
+  satisfied is true
+  used is [list: "CSCI 0330", "CSCI 0410", "CSCI 0500"]
 end
 
 
@@ -952,20 +959,20 @@ check "math-foundations returns true when CSCI 0220 is taken and chosen":
   courses-taken = [list: "CSCI 0220", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-foundations(courses-taken, courses-used, "CSCI 0220")
+  {used; satisfied} = math-foundations(courses-taken, courses-used, "CSCI 0220")
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0220"]
+  satisfied is true
+  used is [list: "CSCI 0220"]
 end
 
 check "math-foundations returns true when MATH 1530 is taken and chosen":
   courses-taken = [list: "MATH 1530", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-foundations(courses-taken, courses-used, "MATH 1530")
+  {used; satisfied} = math-foundations(courses-taken, courses-used, "MATH 1530")
 
-  result.{1} is true
-  result.{0} is [list: "MATH 1530"]
+  satisfied is true
+  used is [list: "MATH 1530"]
 end
 
 check "math-foundations uses only the chosen course when both are taken":
@@ -976,8 +983,12 @@ check "math-foundations uses only the chosen course when both are taken":
 end
 
 check "math-foundations returns false when the chosen course is not taken":
-  math-foundations([list: "MATH 0100", "CSCI 0111"], empty, "CSCI 0220").{1} is false
-  math-foundations([list: "MATH 1530"], empty, "CSCI 0220").{1} is false
+  {_; satisfied-without-either} = math-foundations([list: "MATH 0100", "CSCI 0111"], empty,
+    "CSCI 0220")
+  {_; satisfied-with-other} = math-foundations([list: "MATH 1530"], empty, "CSCI 0220")
+
+  satisfied-without-either is false
+  satisfied-with-other is false
 end
 
 check "math-foundations rejects a choice that is not a math foundation course":
@@ -988,19 +999,19 @@ check "math-foundations returns false when qualifying course is already in cours
   courses-taken = [list: "CSCI 0220"]
   courses-used = [list: "CSCI 0220"]
 
-  result = math-foundations(courses-taken, courses-used, "CSCI 0220")
+  {_; satisfied} = math-foundations(courses-taken, courses-used, "CSCI 0220")
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "math-foundations preserves existing courses-used in the output tuple":
   courses-taken = [list: "MATH 1530", "CSCI 0111"]
   courses-used = [list: "CSCI 0150"]
 
-  result = math-foundations(courses-taken, courses-used, "MATH 1530")
+  {used; satisfied} = math-foundations(courses-taken, courses-used, "MATH 1530")
 
-  result.{1} is true
-  result.{0} is [list: "MATH 1530", "CSCI 0150"]
+  satisfied is true
+  used is [list: "MATH 1530", "CSCI 0150"]
 end
 
 
@@ -1009,7 +1020,7 @@ fun is-cs19-only-course(course :: String) -> Boolean:
   doc: ``` Determines whether a course can fill the CS19 track's additional course but can't
        count as one of the 4 additional electives ```
   (get-course-dept(course) == "CSCI") and
-  (get-course-number(course) >= 200) and
+  (get-course-number(course) >= CS19-SECOND-COURSE-THRESHOLD) and
   (get-course-number(course) < ONE-THOUSAND-LEVEL-THRESHOLD) and
   not([list: "CSCI 0220", "CSCI 0320"].member(course))
 end
@@ -1042,7 +1053,7 @@ fun choose-math-foundation(courses-taken :: List<String>, courses-used :: List<S
        MATH 1530 is only chosen when CS19 has no other course the electives can't use ```
   courses-left = courses-taken.filter(lam(course): not(courses-used.member(course)) end)
   has-cs19-spare = courses-left.any(is-cs19-only-course) or
-    (courses-left.filter(is-non-tech-1000-cs-no-conflict).length() > MAX-NON-TECH)
+  (courses-left.filter(is-non-tech-1000-cs-no-conflict).length() > MAX-NON-TECH)
   ask:
     | not(courses-left.member("MATH 1530")) then: "CSCI 0220"
     | not(courses-left.member("CSCI 0220")) then: "MATH 1530"
@@ -1100,58 +1111,58 @@ check "math-prereq returns true for MATH 0100":
   courses-taken = [list: "MATH 0100", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-prereq(courses-taken, courses-used)
+  {used; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "MATH 0100"]
+  satisfied is true
+  used is [list: "MATH 0100"]
 end
 
 check "math-prereq returns true for MATH 0170":
   courses-taken = [list: "MATH 0170", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-prereq(courses-taken, courses-used)
+  {used; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "MATH 0170"]
+  satisfied is true
+  used is [list: "MATH 0170"]
 end
 
 check "math-prereq returns true for MATH 0190":
   courses-taken = [list: "MATH 0190", "CSCI 0111"]
   courses-used = [list: ]
 
-  result = math-prereq(courses-taken, courses-used)
+  {used; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "MATH 0190"]
+  satisfied is true
+  used is [list: "MATH 0190"]
 end
 
 check "math-prereq returns false when no qualifying intro math course is present":
   courses-taken = [list: "CSCI 0111", "MATH 0520"]
   courses-used = [list: ]
 
-  result = math-prereq(courses-taken, courses-used)
+  {_; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "math-prereq returns false when the qualifying course is already used":
   courses-taken = [list: "MATH 0100"]
   courses-used = [list: "MATH 0100"]
 
-  result = math-prereq(courses-taken, courses-used)
+  {_; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "math-prereq preserves previously used courses in output":
   courses-taken = [list: "MATH 0170", "CSCI 0150"]
   courses-used = [list: "CSCI 0150"]
 
-  result = math-prereq(courses-taken, courses-used)
+  {used; satisfied} = math-prereq(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "MATH 0170", "CSCI 0150"]
+  satisfied is true
+  used is [list: "MATH 0170", "CSCI 0150"]
 end
 
 
@@ -1169,67 +1180,67 @@ check "non-nineteen-track satisfies requirement with CSCI 0111 and CSCI 0200":
   courses-taken = [list: "CSCI 0111", "CSCI 0200", "MATH 0100"]
   courses-used = [list: ]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {used; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0200", "CSCI 0111"]
+  satisfied is true
+  used is [list: "CSCI 0200", "CSCI 0111"]
 end
 
 check "non-nineteen-track satisfies requirement with CSCI 0150 and CSCI 0200":
   courses-taken = [list: "CSCI 0150", "CSCI 0200"]
   courses-used = [list: ]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {used; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0200", "CSCI 0150"]
+  satisfied is true
+  used is [list: "CSCI 0200", "CSCI 0150"]
 end
 
 check "non-nineteen-track satisfies requirement with CSCI 0170 and CSCI 0200":
   courses-taken = [list: "CSCI 0170", "CSCI 0200"]
   courses-used = [list: ]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {used; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0200", "CSCI 0170"]
+  satisfied is true
+  used is [list: "CSCI 0200", "CSCI 0170"]
 end
 
 check "non-nineteen-track returns false if introductory course is missing":
   courses-taken = [list: "CSCI 0200", "MATH 0100"]
   courses-used = [list: ]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {_; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "non-nineteen-track returns false if CSCI 0200 is missing":
   courses-taken = [list: "CSCI 0111", "MATH 0100"]
   courses-used = [list: ]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {_; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "non-nineteen-track returns false if required course is already in courses-used":
   courses-taken = [list: "CSCI 0111", "CSCI 0200"]
   courses-used = [list: "CSCI 0111"]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {_; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is false
+  satisfied is false
 end
 
 check "non-nineteen-track preserves existing used courses in returned list":
   courses-taken = [list: "CSCI 0111", "CSCI 0200"]
   courses-used = [list: "MATH 0100"]
 
-  result = non-nineteen-track(courses-taken, courses-used)
+  {used; satisfied} = non-nineteen-track(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0200", "CSCI 0111", "MATH 0100"]
+  satisfied is true
+  used is [list: "CSCI 0200", "CSCI 0111", "MATH 0100"]
 end
 
 
@@ -1242,7 +1253,7 @@ fun core-cs(courses-taken :: List<String>,
     courses-satisfied(courses-taken, courses-used, [list: 
         lam(course): course == "CSCI 0190" end, 
         lam(course): (get-course-dept(course) == "CSCI") and 
-        (get-course-number(course) >= 200) end])
+        (get-course-number(course) >= CS19-SECOND-COURSE-THRESHOLD) end])
   else:
     non-nineteen-track(courses-taken, courses-used)
   end
@@ -1252,30 +1263,30 @@ check "core-cs accepts CSCI 0190 track when accompanied by a 200+ level CSCI cou
   courses-taken = [list: "CSCI 0190", "CSCI 0200", "MATH 0100"]
   courses-used = [list: ]
 
-  result = core-cs(courses-taken, courses-used)
+  {used; satisfied} = core-cs(courses-taken, courses-used)
 
-  result.{1} is true
-  result.{0} is [list: "CSCI 0200", "CSCI 0190"]
+  satisfied is true
+  used is [list: "CSCI 0200", "CSCI 0190"]
 end
 
 check "core-cs rejects CSCI 0190 track when missing a 200+ level CSCI course":
   courses-taken = [list: "CSCI 0190", "MATH 0100", "ENGN 1010"]
   courses-used = [list: ]
 
-  result = core-cs(courses-taken, courses-used)
+  {used; satisfied} = core-cs(courses-taken, courses-used)
 
-  result.{1} is false
-  result.{0} is [list: "CSCI 0190"]
+  satisfied is false
+  used is [list: "CSCI 0190"]
 end
 
 check "core-cs rejects CSCI 0190 track if 0190 or 200+ level course is already in courses-used":
   courses-taken = [list: "CSCI 0190", "CSCI 0200"]
   courses-used = [list: "CSCI 0190"]
 
-  result = core-cs(courses-taken, courses-used)
+  {_; satisfied} = core-cs(courses-taken, courses-used)
 
-  result.{1} is false
-  
+  satisfied is false
+
   core-cs([list: "CSCI 0190", "CSCI 1000"], [list: "CSCI 1000"]) is 
   {[list: "CSCI 0190", "CSCI 1000"]; false}
 end
@@ -1293,7 +1304,7 @@ end
 
 
 fun is-valid-course(course :: String) -> Boolean:
-  doc: "Determines whether course if relevant to CS requirements"
+  doc: "Determines whether course is relevant to CS requirements"
   member(OUTSIDE-1000-LEVELS, course) or member(OUTSIDE-1000-LEVELS-NO-CONFLICT, course) or 
   member(NON-TECHNICAL, course) or (get-course-dept(course) == "CSCI") or 
   member(CSCI-REQUIRED-CLASSES, course)
@@ -1324,6 +1335,7 @@ end
 
 
 fun check-reqs(classes-taken :: List<String>) -> Completion:
+  doc: "https://cs.brown.edu/courses/csci0190/2026/"
   courses-filtered = filter(is-valid-course-title, classes-taken)
   if not(length(courses-filtered) == length(classes-taken)):
     malformed
@@ -1352,7 +1364,8 @@ fun check-reqs(classes-taken :: List<String>) -> Completion:
       prereqs-four].all(lam(bool): bool end)
     ask:
       | can-graduate then: completed
-      | length(filter(lam(c): is-valid-course(c) and not(member(courses-used-cs-core, c)) end,
+      | length(filter(lam(course): 
+            is-valid-course(course) and not(member(courses-used-cs-core, course)) end,
             classes-taken)) == 0 then: all-necessary
       | otherwise: has-unnecessary
     end
